@@ -1,69 +1,12 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Usuário</title>
-
-  <!-- Incluindo as bibliotecas do Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore.js"></script>
-
-  <script>
-    // Configuração do Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",  // Substitua pelo seu apiKey
-      authDomain: "ampop-4c96f.firebaseapp.com",         // Substitua pelo seu authDomain
-      projectId: "ampop-4c96f",                          // Substitua pelo seu projectId
-      storageBucket: "ampop-4c96f.appspot.com",          // Substitua pelo seu storageBucket
-      messagingSenderId: "1008863242618",                // Substitua pelo seu messagingSenderId
-      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3" // Substitua pelo seu appId
-    };
-
-    // Inicializando o Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(app);  // Referência para Firestore
-
-    // Função para salvar dados no Firestore
-    function salvarDados() {
-      const username = document.getElementById('username').value;
-      const email = document.getElementById('email').value;
-      const devices = document.getElementById('devices').value.split(',').map(device => device.trim());
-
-      // Salvando os dados no Firestore
-      db.collection("usuarios").add({
-        nome: username,
-        email: email,
-        dispositivos: devices
-      })
-      .then(() => {
-        alert('Usuário cadastrado com sucesso!');
-        document.getElementById('registerForm').reset(); // Limpa o formulário
-      })
-      .catch((error) => {
-        console.error("Erro ao cadastrar usuário: ", error);
-        alert("Erro ao cadastrar o usuário.");
-      });
-    }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página Inicial - AMP</title>
 </head>
 <body>
-
-  <h1>Cadastro de Usuário</h1>
-
-  <!-- Formulário para cadastro -->
-  <form id="registerForm" onsubmit="event.preventDefault(); salvarDados();">
-    <label for="username">Nome:</label>
-    <input type="text" id="username" name="username" required><br><br>
-
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required><br><br>
-
-    <label for="devices">Dispositivos (IDs separados por vírgula):</label>
-    <input type="text" id="devices" name="devices" required><br><br>
-
-    <button type="submit">Cadastrar</button>
-  </form>
-
+    <h1>Bem-vindo ao sistema AMP</h1>
+    <p>Esta é uma página simples para testar o GitHub Pages.</p>
 </body>
 </html>
