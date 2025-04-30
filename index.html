@@ -48,6 +48,8 @@
             const email = document.getElementById('email').value;
             const dispositivos = document.getElementById('dispositivos').value.split(',');
 
+            console.log('Dados para salvar:', nome, email, dispositivos);
+
             // Criar um documento no Firestore com os dados do usuário
             db.collection('usuarios').add({
                 nome: nome,
@@ -59,6 +61,7 @@
                 document.getElementById('formCadastro').reset();
             }).catch((error) => {
                 console.error("Erro ao cadastrar usuário: ", error);
+                alert("Erro ao cadastrar usuário: " + error.message);
             });
         });
     </script>
