@@ -1,49 +1,18 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <title>Teste Firebase</title>
-  <script type="module">
-    // Importa módulos do Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+<h2>Login</h2>
+<input type="email" id="email" placeholder="Email" />
+<input type="password" id="password" placeholder="Senha" />
+<button onclick="login()">Entrar</button>
 
-    // Configuração do Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
-      authDomain: "ampop-4c96f.firebaseapp.com",
-      projectId: "ampop-4c96f",
-      storageBucket: "ampop-4c96f.appspot.com",
-      messagingSenderId: "1008863242618",
-      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
-    };
-
-    // Inicializa Firebase e Firestore
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // Salvar usuário no clique do botão
-    async function salvarUsuario() {
-      try {
-        const docRef = await addDoc(collection(db, "usuarios"), {
-          nome: document.getElementById("nome").value,
-          email: document.getElementById("email").value,
-          dispositivos: ["esp32c3-001"]
-        });
-        alert("Usuário salvo com ID: " + docRef.id);
-      } catch (e) {
-        alert("Erro ao salvar: " + e);
-      }
-    }
-
-    // Deixa a função global para o botão funcionar
-    window.salvarUsuario = salvarUsuario;
-  </script>
-</head>
-<body>
-  <h1>Cadastro de Usuário</h1>
-  <input type="text" id="nome" placeholder="Nome"><br><br>
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <button onclick="salvarUsuario()">Salvar</button>
-</body>
-</html>
+<script>
+  function login() {
+    const email = email.value;
+    const password = password.value;
+    firebase.auth().signInWithEmailAndPassword(email, password)
+      .then(() => {
+        window.location.href = "dashboard.html";
+      })
+      .catch((error) => {
+        alert("Erro: " + error.message);
+      });
+  }
+</script>
