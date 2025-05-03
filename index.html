@@ -1,50 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AMPOP - Bem-vindo</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
       color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       text-align: center;
-      padding: 60px 20px;
+      padding: 20px;
     }
 
     h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
     }
 
     p {
       font-size: 1.2rem;
       margin-bottom: 2rem;
+      max-width: 500px;
     }
 
     .btn {
       background-color: #ff9800;
       color: #fff;
-      padding: 12px 24px;
+      padding: 14px 32px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 1.1rem;
       cursor: pointer;
       text-decoration: none;
+      transition: background 0.3s ease;
     }
 
     .btn:hover {
       background-color: #e68900;
+    }
+
+    footer {
+      position: absolute;
+      bottom: 10px;
+      font-size: 0.9rem;
+      opacity: 0.6;
     }
   </style>
 </head>
 <body>
 
   <h1>Bem-vindo à Plataforma AMPOP</h1>
-  <p>Monitore seus dispositivos e sensores remotamente com segurança e eficiência.</p>
+  <p>Monitore seus dispositivos e sensores remotamente com segurança e eficiência. Acesse a área administrativa para gerenciar os usuários e dispositivos conectados.</p>
 
-  <a href="teste.html" class="btn">Acessar Página de Teste</a>
+  <a href="admin-login.html" class="btn">Área Administrativa</a>
 
+  <footer>&copy; 2025 AMPOP. Todos os direitos reservados.</footer>
 </body>
 </html>
