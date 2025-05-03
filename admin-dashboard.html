@@ -1,0 +1,55 @@
+<!-- admin-dashboard.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Admin</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+      authDomain: "ampop-4c96f.firebaseapp.com",
+      projectId: "ampop-4c96f",
+      storageBucket: "ampop-4c96f.appspot.com",
+      messagingSenderId: "1008863242618",
+      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+</head>
+<body>
+  <h2>Painel do Administrador</h2>
+  <button onclick="logout()">Sair</button>
+  <div id="users"></div>
+
+  <script>
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user || user.email !== "admin@ampop.com") {
+        location.href = "admin-login.html";
+      }
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => location.href = "admin-login.html");
+    }
+
+    db.collection("usuarios").get().then(snapshot => {
+      let html = '<table border="1"><tr><th>Nome</th><th>Email</th><th>Dispositivos</th><th>Ação</th></tr>';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        html += `<tr>
+          <td>${data.nome}</td>
+          <td>${data.email}</td>
+          <td>${data.dispositivos}</td>
+          <td><a href="admin-user-details.html?id=${doc.id}">Ver</a></td>
+        </tr>`;
+      });
+      html += '</table>';
+      document.getElementById("users").innerHTML = html;
+    });
+  </script>
+</body>
+</html>
