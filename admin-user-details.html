@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AMPOP - Detalhes do Usuário</title>
+
+  <!-- Importação do Firebase SDK via CDN -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+  <script>
+    // Sua configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+      authDomain: "ampop-4c96f.firebaseapp.com",
+      projectId: "ampop-4c96f",
+      storageBucket: "ampop-4c96f.appspot.com",
+      messagingSenderId: "1008863242618",
+      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+    };
+
+    // Inicializa o Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: white;
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
+      background-color: #ff9800;
+      color: #fff;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background-color: #e68900;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Detalhes do Usuário</h1>
+  <p>Informações do usuário selecionado aqui.</p>
+  <button class="btn">Excluir Usuário</button>
+
+</body>
+</html>
