@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teste Firebase</title>
+</head>
+<body>
+  <h2>Testando conexão com Firebase...</h2>
+  <p id="resultado">Aguardando resposta...</p>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
+
+  <script>
+    // Suas credenciais do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+      authDomain: "ampop-4c96f.firebaseapp.com",
+      projectId: "ampop-4c96f",
+      storageBucket: "ampop-4c96f.appspot.com",
+      messagingSenderId: "1008863242618",
+      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+    };
+
+    // Inicializa Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Tenta escrever um dado no Firestore
+    db.collection("testes").add({
+      mensagem: "Teste de conexão com Firebase",
+      timestamp: new Date()
+    })
+    .then(docRef => {
+      document.getElementById('resultado').innerText = "Sucesso! Documento ID: " + docRef.id;
+    })
+    .catch(error => {
+      document.getElementById('resultado').innerText = "Erro: " + error.message;
+    });
+  </script>
+</body>
+</html>
