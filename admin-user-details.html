@@ -1,32 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AMPOP - Detalhes do Usuário</title>
-
-  <!-- Importação do Firebase SDK via CDN -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-
-  <script>
-    // Sua configuração do Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
-      authDomain: "ampop-4c96f.firebaseapp.com",
-      projectId: "ampop-4c96f",
-      storageBucket: "ampop-4c96f.appspot.com",
-      messagingSenderId: "1008863242618",
-      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
-    };
-
-    // Inicializa o Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-  </script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detalhes do Usuário</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -38,7 +15,6 @@
 
     h1 {
       font-size: 2.5rem;
-      margin-bottom: 1rem;
     }
 
     .btn {
@@ -49,6 +25,7 @@
       border-radius: 6px;
       font-size: 1.1rem;
       cursor: pointer;
+      text-decoration: none;
     }
 
     .btn:hover {
@@ -59,8 +36,11 @@
 <body>
 
   <h1>Detalhes do Usuário</h1>
-  <p>Informações do usuário selecionado aqui.</p>
-  <button class="btn">Excluir Usuário</button>
+  <p>Exibe os dados do usuário. Pode incluir a opção de editar ou excluir.</p>
+
+  <!-- Adicione aqui a lógica para exibir os detalhes do usuário do Firestore -->
+
+  <a href="admin-dashboard.html" class="btn">Voltar</a>
 
 </body>
 </html>
