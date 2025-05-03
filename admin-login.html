@@ -1,30 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AMPOP - Login Administrativo</title>
-
-  <!-- Importação do Firebase SDK via CDN -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-
-  <script>
-    // Sua configuração do Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
-      authDomain: "ampop-4c96f.firebaseapp.com",
-      projectId: "ampop-4c96f",
-      storageBucket: "ampop-4c96f.appspot.com",
-      messagingSenderId: "1008863242618",
-      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
-    };
-
-    // Inicializa o Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-  </script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login Administrador</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -34,21 +13,15 @@
       padding: 60px 20px;
     }
 
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
     input {
-      padding: 12px;
-      font-size: 1rem;
-      margin: 10px 0;
-      width: 80%;
+      padding: 10px;
+      margin: 10px;
       border-radius: 6px;
       border: none;
+      width: 80%;
     }
 
-    .btn {
+    button {
       background-color: #ff9800;
       color: #fff;
       padding: 12px 24px;
@@ -58,41 +31,59 @@
       cursor: pointer;
     }
 
-    .btn:hover {
+    button:hover {
       background-color: #e68900;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
 
-  <h1>Área Administrativa</h1>
-  <form id="loginForm">
-    <input type="email" id="email" name="email" placeholder="Usuário" required><br>
-    <input type="password" id="password" name="password" placeholder="Senha" required><br>
-    <button type="submit" class="btn">Entrar</button>
-  </form>
+  <h1>Login do Administrador</h1>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="senha" placeholder="Senha" />
+  <button onclick="login()">Entrar</button>
+  <div id="status"></div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
 
   <script>
-    // Função para fazer o login
-    document.getElementById('loginForm').addEventListener('submit', (e) => {
-      e.preventDefault(); // Impede o envio do formulário
+    // Suas credenciais do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+      authDomain: "ampop-4c96f.firebaseapp.com",
+      projectId: "ampop-4c96f",
+      storageBucket: "ampop-4c96f.appspot.com",
+      messagingSenderId: "1008863242618",
+      appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+    };
 
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+    // Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-      auth.signInWithEmailAndPassword(email, password)
+    function login() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+
+      auth.signInWithEmailAndPassword(email, senha)
         .then((userCredential) => {
-          // Login bem-sucedido, redirecionar para o painel
-          window.location.href = "admin-dashboard.html";
+          const user = userCredential.user;
+          document.getElementById("status").innerText = "✅ Login bem-sucedido!";
+          window.location.href = "admin-dashboard.html"; // Redireciona para o painel
         })
         .catch((error) => {
-          // Tratar erros de login
           const errorCode = error.code;
           const errorMessage = error.message;
-          alert('Erro: ' + errorMessage);
+          document.getElementById("status").innerText = "❌ " + errorMessage;
         });
-    });
+    }
   </script>
-
 </body>
 </html>
