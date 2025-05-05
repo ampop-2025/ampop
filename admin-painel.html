@@ -118,7 +118,7 @@ const firebaseConfig = {
 
     // Verifica se o admin está logado
     onAuthStateChanged(auth, (user) => {
-      if (!user || user.email !== "admin@ampop.com.br") {
+      if (!user || user.email !== "admin@ampop.com") {
         window.location.href = "admin-login.html";
       } else {
         carregarEmails();
