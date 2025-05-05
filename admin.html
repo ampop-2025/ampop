@@ -3,80 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ampConnect - Admin</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <style>
-    body {
-      background: #121212;
-      color: white;
-      font-family: Arial, sans-serif;
-      padding: 2rem;
-    }
-
-    h1 {
-      text-align: center;
-    }
-
-    .section {
-      margin: 2rem 0;
-    }
-
-    input, button {
-      padding: 0.5rem;
-      margin: 0.3rem 0;
-    }
-
-    button {
-      background-color: #ff5722;
-      border: none;
-      color: white;
-      cursor: pointer;
-    }
-
-    table {
-      width: 100%;
-      margin-top: 1rem;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 0.5rem;
-      border-bottom: 1px solid #444;
-    }
-
-    a {
-      color: #4fc3f7;
-    }
-  </style>
+  <title>ampConnect - Painel Administrativo</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <h1>Painel Administrativo</h1>
+<body class="dark-theme">
+  <div class="container">
+    <img src="logo.png" alt="Logo ampConnect" class="logo" />
+    <h1>Painel Administrativo</h1>
+    <p>Gerencie usuários autorizados do sistema ampConnect.</p>
 
-  <div class="section">
-    <h2>Usuários autorizados</h2>
-    <input type="email" id="emailInput" placeholder="Novo e-mail autorizado" />
-    <button onclick="addEmail()">Adicionar</button>
-    <table>
-      <thead>
-        <tr><th>Email</th><th>Ação</th></tr>
-      </thead>
-      <tbody id="emailList"></tbody>
-    </table>
+    <!-- Conteúdo do painel aqui -->
+    <div id="admin-content" style="display: none;">
+      <!-- Conteúdo administrativo real -->
+      <p>Bem-vindo, administrador!</p>
+      <button onclick="logout()">Sair</button>
+    </div>
   </div>
 
-  <div class="section">
-    <h2>Dispositivos cadastrados</h2>
-    <table>
-      <thead>
-        <tr><th>Nome</th><th>Dono (UID)</th><th>Ação</th></tr>
-      </thead>
-      <tbody id="deviceList"></tbody>
-    </table>
-  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
   authDomain: "ampop-4c96f.firebaseapp.com",
@@ -86,47 +33,25 @@ const firebaseConfig = {
   appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
 };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-    const ADMIN_EMAIL = "admin@ampop.com.br";
+    const ADMIN_UID = QBRIuIdqwEb7a5NKO8NKFRsGuW42; // <-- Substitua com o UID real do admin
 
-    auth.onAuthStateChanged(user => {
-      if (!user || user.email !== ADMIN_EMAIL) {
-        alert("Acesso restrito ao administrador.");
-        window.location.href = "index.html";
-        return;
+    onAuthStateChanged(auth, (user) => {
+      if (user && user.uid === ADMIN_UID) {
+        document.getElementById('admin-content').style.display = 'block';
+      } else {
+        window.location.href = "admin-login.html";
       }
-      loadEmails();
-      loadDevices();
     });
 
-    function loadEmails() {
-      const tbody = document.getElementById("emailList");
-      db.collection("authorizedUsers").get().then(snapshot => {
-        tbody.innerHTML = "";
-        snapshot.forEach(doc => {
-          const email = doc.id;
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${email}</td>
-            <td><button onclick="removeEmail('${email}')">Remover</button></td>
-          `;
-          tbody.appendChild(row);
-        });
+    window.logout = () => {
+      signOut(auth).then(() => {
+        window.location.href = "admin-login.html";
       });
-    }
+    };
+  </script>
+</body>
+</html>
 
-    function addEmail() {
-      const email = document.getElementById("emailInput").value.trim().toLowerCase();
-      if (!email) return alert("Informe um e-mail.");
-      db.collection("authorizedUsers").doc(email).set({ createdAt: new Date() }).then(() => {
-        document.getElementById("emailInput").value = "";
-        loadEmails();
-      });
-    }
-
-    function removeEmail(email) {
-      if (confirm(`Remover ${email}?`)) {
-        db.collection("authorizedUsers").doc(email).delete().then(loadEmail
