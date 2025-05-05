@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ampConnect - Dispositivo</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: white;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .info {
+      margin: 1rem 0;
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
+      border-radius: 5px;
+      border: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #ff5722;
+      color: white;
+      font-size: 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background-color: #e64a19;
+    }
+
+    .status-on {
+      color: #00e676;
+    }
+
+    .status-off {
+      color: #ff5252;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="deviceName">Dispositivo</h1>
+
+  <div class="info">
+    <p>Status atual: <span id="statusText" class="status-off">Desligado</span></p>
+    <p>Tempo ligado: <span id="timeOn">0 min</span></p>
+    <p>Tempo desligado: <span id="timeOff">0 min</span></p>
+  </div>
+
+  <button id="toggleBtn">Ligar</button>
+
+  <form id="settingsForm">
+    <label>Tempo ligado (min):
+      <input type="number" id="tempoLigado" min="1" required />
+    </label>
+    <label>Tempo desligado (min):
+      <input type="number" id="tempoDesligado" min="1" required />
+    </label>
+    <button type="submit">Salvar configurações</button>
+  </form>
+
+  <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+  authDomain: "ampop-4c96f.firebaseapp.com",
+  projectId: "ampop-4c96f",
+  storageBucket: "ampop-4c96f.firebasestorage.app",
+  messagingSenderId: "1008863242618",
+  appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceId = urlParams.get("id");
+
+    const statusText = document.getElementById("statusText");
+    const toggleBtn = document.getElementById("toggleBtn");
+    const timeOn = document.getElementById("timeOn");
+    const timeOff = document.getElementById("timeOff");
+    const deviceName = document.getElementById("deviceName");
+    const tempoLigadoInput = document.getElementById("tempoLigado");
+    const tempoDesligadoInput = document.getElementById("tempoDesligado");
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        loadDevice();
+      }
+    });
+
+    function loadDevice() {
+      const ref = db.collection("devices").doc(deviceId);
+      ref.onSnapshot(doc => {
+        const data = doc.data();
+        if (!data) return;
+
+        deviceName.textContent = data.name || "Dispositivo";
+        statusText.textContent = data.status ? "Ligado" : "Desligado";
+        statusText.className = data.status ? "status-on" : "status-off";
+        timeOn.textContent = `${data.totalOn || 0} min`;
+        timeOff.textContent = `${data.totalOff || 0} min`;
+        tempoLigadoInput.value = data.tempoLigado || 10;
+        tempoDesligadoInput.value = data.tempoDesligado || 10;
+
+        toggleBtn.textContent = data.status ? "Desligar" : "Ligar";
+      });
+
+      toggleBtn.onclick = () => {
+        ref.update({
+          status: firebase.firestore.FieldValue.increment(1) % 2 === 0 ? false : true,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      };
+
+      document.getElementById("settingsForm").addEventListener("submit", e => {
+        e.preventDefault();
+        ref.update({
+          tempoLigado: parseInt(tempoLigadoInput.value),
+          tempoDesligado: parseInt(tempoDesligadoInput.value),
+        });
+      });
+    }
+  </script>
+</body>
+</html>
