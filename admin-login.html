@@ -2,74 +2,27 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login - ampConnect Admin</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .login-container {
-      background-color: rgba(0, 0, 0, 0.6);
-      padding: 2rem;
-      border-radius: 10px;
-      width: 300px;
-      text-align: center;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: none;
-      font-size: 1rem;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #ff5722;
-      color: white;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #e64a19;
-    }
-
-    .error {
-      color: #ff4081;
-      font-size: 1rem;
-      margin-top: 10px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login Administrador - ampConnect</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div class="login-container">
-    <h2>Login de Administrador</h2>
-    <input type="email" id="email" placeholder="Digite seu e-mail" />
-    <input type="password" id="password" placeholder="Digite sua senha" />
-    <button onclick="login()">Entrar</button>
-    <div id="error-message" class="error"></div>
+<body class="dark-theme">
+  <div class="container">
+    <h1>Login do Administrador</h1>
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Senha" />
+    <button onclick="loginAdmin()">Entrar</button>
+    <p id="error-msg" style="color: red;"></p>
   </div>
 
-  <script>
-    // Configuração do Firebase
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+ // Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
   authDomain: "ampop-4c96f.firebaseapp.com",
@@ -79,26 +32,27 @@ const firebaseConfig = {
   appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
 };
 
-    // Inicializa o Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-    // Função de login
-    function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const errorMessageElement = document.getElementById('error-message');
-      
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          // Usuário logado com sucesso, redireciona para o painel administrativo
-          window.location.href = "admin-dashboard.html"; 
-        })
-        .catch(error => {
-          // Exibe erro caso as credenciais estejam incorretas
-          errorMessageElement.innerText = "E-mail ou senha inválidos.";
-        });
-    }
+    window.loginAdmin = async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Apenas o administrador pode acessar
+        if (user.email === "admin@ampop.com") {
+          window.location.href = "admin.html";
+        } else {
+          document.getElementById("error-msg").textContent = "Acesso restrito ao administrador.";
+        }
+      } catch (error) {
+        document.getElementById("error-msg").textContent = "Erro: " + error.message;
+      }
+    };
   </script>
 </body>
 </html>
