@@ -116,7 +116,7 @@ const firebaseConfig = {
 
     // Função para verificar se o administrador está logado
     onAuthStateChanged(auth, (user) => {
-      if (!user || user.email !== "admin@ampconnect.com") {
+      if (!user || user.email !== "admin@ampop.com") {
         // Caso não seja o administrador ou esteja deslogado, redireciona para login
         window.location.href = "admin-login.html";
       }
