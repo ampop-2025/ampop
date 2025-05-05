@@ -3,39 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login Administrativo - ampConnect</title>
+  <title>Login do Administrador - ampConnect</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f0f0;
-      padding: 40px;
-      color: #333;
+      background: #1c1c1c;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
+
     h1 {
-      color: #222;
+      margin-bottom: 20px;
     }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      width: 300px;
+    }
+
     input, button {
       padding: 10px;
+      margin: 5px 0;
       font-size: 1rem;
     }
-    input {
-      width: 250px;
-    }
+
     button {
-      margin-left: 10px;
-      background: #007bff;
+      background-color: #ff9800;
       color: white;
       border: none;
-      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e68900;
+    }
+
+    .error {
+      color: #f44336;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Login Administrativo</h1>
+  <h1>Login Administrador</h1>
   <form id="loginForm">
-    <input type="email" id="email" placeholder="Email" required />
+    <input type="email" id="email" placeholder="E-mail" required />
     <input type="password" id="password" placeholder="Senha" required />
-    <button type="submit">Login</button>
+    <button type="submit">Entrar</button>
+    <div class="error" id="errorMsg"></div>
   </form>
 
   <script type="module">
@@ -52,31 +73,28 @@ const firebaseConfig = {
   appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
 };
 
-    // Inicializando o app do Firebase
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // Referências aos elementos do formulário
     const loginForm = document.getElementById("loginForm");
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
+    const errorMsg = document.getElementById("errorMsg");
 
-    // Função de login
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        alert("Login realizado com sucesso!");
-        window.location.href = "admin-painel.html";  // Redireciona para o painel do admin
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        if (cred.user.email === "admin@ampop.com.br") {
+          window.location.href = "admin-painel.html";
+        } else {
+          errorMsg.textContent = "Você não tem permissão para acessar esta área.";
+        }
       } catch (error) {
-        alert("Erro ao fazer login: " + error.message);
+        errorMsg.textContent = "Erro ao fazer login: " + error.message;
       }
     });
   </script>
 </body>
 </html>
-
