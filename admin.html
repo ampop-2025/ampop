@@ -3,26 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ampConnect - Painel Administrativo</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body class="dark-theme">
-  <div class="container">
-    <img src="logo.png" alt="Logo ampConnect" class="logo" />
-    <h1>Painel Administrativo</h1>
-    <p>Gerencie usuários autorizados do sistema ampConnect.</p>
-
-    <!-- Conteúdo do painel aqui -->
-    <div id="admin-content" style="display: none;">
-      <!-- Conteúdo administrativo real -->
-      <p>Bem-vindo, administrador!</p>
-      <button onclick="logout()">Sair</button>
-    </div>
-  </div>
-
+  <title>Painel Administrativo</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
@@ -36,22 +20,15 @@ const firebaseConfig = {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    const ADMIN_UID = QBRIuIdqwEb7a5NKO8NKFRsGuW42; // <-- Substitua com o UID real do admin
-
     onAuthStateChanged(auth, (user) => {
-      if (user && user.uid === ADMIN_UID) {
-        document.getElementById('admin-content').style.display = 'block';
-      } else {
+      if (!user || user.email !== "admin@ampop.com") {
         window.location.href = "admin-login.html";
       }
     });
-
-    window.logout = () => {
-      signOut(auth).then(() => {
-        window.location.href = "admin-login.html";
-      });
-    };
   </script>
+</head>
+<body>
+  <h1>Bem-vindo, Administrador</h1>
+  <!-- Conteúdo do painel admin aqui -->
 </body>
 </html>
-
