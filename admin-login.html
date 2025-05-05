@@ -86,7 +86,7 @@ const firebaseConfig = {
 
       try {
         const cred = await signInWithEmailAndPassword(auth, email, password);
-        if (cred.user.email === "admin@ampop.com.br") {
+        if (cred.user.email === "admin@ampop.com") {
           window.location.href = "admin-painel.html";
         } else {
           errorMsg.textContent = "Você não tem permissão para acessar esta área.";
