@@ -115,12 +115,11 @@ const firebaseConfig = {
     const logoutButton = document.getElementById("logoutButton");
 
     // Função para verificar se o administrador está logado
-    onAuthStateChanged(auth, (user) => {
-      if (!user || user.email !== "admin@ampop.com") {
-        // Caso não seja o administrador ou esteja deslogado, redireciona para login
-        window.location.href = "admin-login.html";
-      }
-    });
+onAuthStateChanged(auth, (user) => {
+  if (!user || user.email !== "admin@ampop.com.br") {
+    window.location.href = "admin-login.html";
+  }
+});
 
     // Função para carregar a lista de e-mails autorizados
     async function carregarEmails() {
