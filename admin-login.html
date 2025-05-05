@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Administrativo - ampConnect</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      padding: 40px;
+      color: #333;
+    }
+    h1 {
+      color: #222;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+    input {
+      width: 250px;
+    }
+    button {
+      margin-left: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Login Administrativo</h1>
+  <form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required />
+    <input type="password" id="password" placeholder="Senha" required />
+    <button type="submit">Login</button>
+  </form>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+    // ✅ Substitua pelas suas credenciais:
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+  authDomain: "ampop-4c96f.firebaseapp.com",
+  projectId: "ampop-4c96f",
+  storageBucket: "ampop-4c96f.firebasestorage.app",
+  messagingSenderId: "1008863242618",
+  appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+};
+
+    // Inicializando o app do Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // Referências aos elementos do formulário
+    const loginForm = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+
+    // Função de login
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        alert("Login realizado com sucesso!");
+        window.location.href = "admin-painel.html";  // Redireciona para o painel do admin
+      } catch (error) {
+        alert("Erro ao fazer login: " + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
+

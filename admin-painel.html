@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo - Gerenciamento de Usuários - ampConnect</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1 {
+      color: #222;
+    }
+
+    form {
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+    }
+
+    input {
+      width: 250px;
+    }
+
+    button {
+      margin-left: 10px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    td button {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    td button:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gerenciamento de Usuários Autorizados</h1>
+
+  <form id="authForm">
+    <input type="email" id="email" placeholder="Novo e-mail autorizado" required />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <h2>Lista de E-mails Autorizados</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="emailList"></tbody>
+  </table>
+
+  <button id="logoutButton">Logout</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, deleteDoc, getDocs, setDoc, doc
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
+    // ✅ Substitua pelas suas credenciais:
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
+  authDomain: "ampop-4c96f.firebaseapp.com",
+  projectId: "ampop-4c96f",
+  storageBucket: "ampop-4c96f.firebasestorage.app",
+  messagingSenderId: "1008863242618",
+  appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
+};
+
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const emailInput = document.getElementById("email");
+    const emailList = document.getElementById("emailList");
+    const authForm = document.getElementById("authForm");
+    const logoutButton = document.getElementById("logoutButton");
+
+    // Função para verificar se o administrador está logado
+    onAuthStateChanged(auth, (user) => {
+      if (!user || user.email !== "admin@ampconnect.com") {
+        // Caso não seja o administrador ou esteja deslogado, redireciona para login
+        window.location.href = "admin-login.html";
+      }
+    });
+
+    // Função para carregar a lista de e-mails autorizados
+    async function carregarEmails() {
+      emailList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "usuarios_autorizados"));
+      querySnapshot.forEach((docSnap) => {
+        const email = docSnap.id;
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${email}</td>
+          <td><button onclick="removerEmail('${email}')">Remover</button></td>
+        `;
+        emailList.appendChild(row);
+      });
+    }
+
+    // Função para remover um e-mail
+    window.removerEmail = async function(email) {
+      if (confirm(`Remover o e-mail: ${email}?`)) {
+        await deleteDoc(doc(db, "usuarios_autorizados", email));
+        carregarEmails();
+      }
+    };
+
+    // Função para adicionar um novo e-mail autorizado
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = emailInput.value.trim().toLowerCase();
+      if (!email) return;
+
+      try {
+        await setDoc(doc(db, "usuarios_autorizados", email), {
+          status: "autorizado"
+        });
+        emailInput.value = "";
+        carregarEmails();
+      } catch (err) {
+        alert("Erro ao adicionar: " + err.message);
+      }
+    });
+
+    // Função de logout
+    logoutButton.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "admin-login.html";
+      } catch (error) {
+        alert("Erro ao fazer logout: " + error.message);
+      }
+    });
+
+    // Carregar a lista de e-mails ao carregar a página
+    carregarEmails();
+  </script>
+</body>
+</html>
