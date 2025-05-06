@@ -2,159 +2,182 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Dispositivos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel do Usuário</title>
   <style>
     body {
+      background: #e6f0ff;
       font-family: Arial, sans-serif;
-      background: #eaf4ff;
+      padding: 2rem;
       margin: 0;
-      padding: 0;
     }
-    header {
-      background: #007BFF;
-      color: white;
-      padding: 1rem;
-      text-align: center;
+    h2 {
+      color: #004080;
+      margin-bottom: 1rem;
     }
     .container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      padding: 1rem;
+      max-width: 800px;
+      margin: auto;
     }
     .card {
       background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 15px;
       padding: 1.5rem;
       margin-bottom: 1.5rem;
-    }
-    .card h3 {
-      margin-top: 0;
-      color: #007BFF;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
     input, button {
-      padding: 0.5rem;
-      margin-right: 0.5rem;
-      border-radius: 5px;
+      padding: 0.75rem;
       border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    input {
+      width: calc(100% - 1.6rem);
+      margin-bottom: 1rem;
     }
     button {
-      background-color: #007BFF;
+      background: #004080;
       color: white;
+      font-weight: bold;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
-    #devicesList {
-      margin-top: 1rem;
+    button:hover {
+      background: #0059b3;
+    }
+    .device-list {
+      margin-top: 2rem;
+    }
+    .device-item {
+      padding: 1rem;
+      background: #f0f8ff;
+      margin-bottom: 0.5rem;
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .status {
       font-weight: bold;
-    }
-    .online {
       color: green;
     }
-    .offline {
-      color: red;
-    }
-    .logout-btn {
+    .logout {
       float: right;
-      background-color: #dc3545;
+      background: #cc0000;
+    }
+    .copy {
+      background: #ffa500;
+      margin-left: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Meus Dispositivos</h1>
-    <button class="logout-btn" onclick="logout()">Sair</button>
-  </header>
-
   <div class="container">
+    <h2>Painel do Usuário <button class="logout" onclick="logout()">Sair</button></h2>
+
     <div class="card">
-      <h3>Adicionar Novo Dispositivo</h3>
-      <input type="text" id="deviceId" placeholder="ID do dispositivo" />
-      <button onclick="adicionarDispositivo()">Adicionar</button>
-      <div id="adicionarStatus"></div>
+      <h3>Registrar Novo Dispositivo</h3>
+      <input type="text" id="deviceName" placeholder="Nome do Dispositivo" />
+      <button onclick="registrarDispositivo()">Gerar ID e Registrar Dispositivo</button>
+      <div id="mensagem"></div>
     </div>
 
-    <div class="card">
-      <h3>Lista de Dispositivos</h3>
-      <div id="devicesList">Carregando...</div>
+    <div class="card device-list">
+      <h3>Meus Dispositivos</h3>
+      <div id="listaDispositivos"></div>
     </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
-    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, query, where, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js';
-    import { firebaseConfig } from './firebase-config.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const adicionarStatus = document.getElementById("adicionarStatus");
-    const devicesList = document.getElementById("devicesList");
+    const mensagem = document.getElementById("mensagem");
+    const listaDispositivos = document.getElementById("listaDispositivos");
 
     let currentUser = null;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        carregarDispositivos(user.uid);
+      } else {
         window.location.href = "user-login.html";
-        return;
       }
-      currentUser = user;
-      carregarDispositivos();
     });
 
-    async function adicionarDispositivo() {
-      const deviceId = document.getElementById("deviceId").value.trim();
-      if (!deviceId) {
-        adicionarStatus.textContent = "Digite o ID do dispositivo.";
+    async function registrarDispositivo() {
+      const nome = document.getElementById("deviceName").value.trim();
+      if (!nome) {
+        mensagem.textContent = "Digite o nome do dispositivo.";
         return;
       }
 
+      const deviceId = gerarDeviceId();
+
       try {
-        const deviceRef = doc(db, "devices", deviceId);
-        const deviceSnap = await getDoc(deviceRef);
+        await addDoc(collection(db, "devices"), {
+          uid: currentUser.uid,
+          nome: nome,
+          deviceId: deviceId,
+          status: "desconectado"
+        });
 
-        if (!deviceSnap.exists()) {
-          await setDoc(deviceRef, {
-            owner: currentUser.uid,
-            online: false,
-            addedAt: new Date()
-          });
-        }
-
-        adicionarStatus.textContent = "Dispositivo adicionado com sucesso!";
-        document.getElementById("deviceId").value = "";
-        carregarDispositivos();
-      } catch (error) {
-        adicionarStatus.textContent = "Erro ao adicionar: " + error.message;
+        mensagem.innerHTML = `Dispositivo registrado com ID: <b>${deviceId}</b>`;
+        document.getElementById("deviceName").value = "";
+      } catch (e) {
+        mensagem.textContent = "Erro ao registrar dispositivo.";
+        console.error(e);
       }
     }
 
-    async function carregarDispositivos() {
-      devicesList.innerHTML = "";
-      const q = query(collection(db, "devices"), where("owner", "==", currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      if (querySnapshot.empty) {
-        devicesList.textContent = "Nenhum dispositivo encontrado.";
-        return;
+    function gerarDeviceId() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let id = "";
+      for (let i = 0; i < 7; i++) {
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
       }
+      return "esp32-c3-" + id;
+    }
 
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.innerHTML = `
-          <strong>ID:</strong> ${doc.id} <br />
-          <strong>Status:</strong> <span class="status ${data.online ? 'online' : 'offline'}">${data.online ? 'Conectado' : 'Desconectado'}</span>
-          <hr />
-        `;
-        devicesList.appendChild(div);
+    function carregarDispositivos(uid) {
+      const q = query(collection(db, "devices"), where("uid", "==", uid));
+
+      onSnapshot(q, snapshot => {
+        listaDispositivos.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "device-item";
+          div.innerHTML = `
+            <div>
+              <strong>${data.nome}</strong><br/>
+              ID: ${data.deviceId}<br/>
+              Status: <span class="status">${data.status}</span>
+            </div>
+            <div>
+              <button class="copy" onclick="copiarId('${data.deviceId}')">Copiar ID</button>
+            </div>
+          `;
+          listaDispositivos.appendChild(div);
+        });
       });
     }
 
-    window.logout = function () {
+    window.copiarId = function(id) {
+      navigator.clipboard.writeText(id).then(() => {
+        alert("ID copiado para a área de transferência!");
+      });
+    };
+
+    window.logout = function() {
       signOut(auth).then(() => {
         window.location.href = "user-login.html";
       });
