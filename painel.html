@@ -140,6 +140,8 @@
         })
         .catch((error) => {
           console.error("Erro ao sair:", error.message);
+          message.textContent = "Erro ao tentar sair. Tente novamente.";
+          message.className = "message error";
         });
     }
 
@@ -178,6 +180,7 @@
       } catch (error) {
         message.textContent = "Erro ao adicionar dispositivo: " + error.message;
         message.className = "message error";
+        console.error("Erro ao adicionar dispositivo:", error);
       }
     }
 
