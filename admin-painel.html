@@ -1,40 +1,81 @@
-<style>
-  table {
-    width: 100%;
-    border-collapse: collapse;
-  }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Administrativo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #ffffff);
+      color: #01579b;
+      margin: 0;
+      padding: 2rem;
+    }
+    h2 {
+      color: #0277bd;
+    }
+    .controls {
+      margin-bottom: 1rem;
+    }
+    input, select {
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+      border: 1px solid #90caf9;
+      border-radius: 5px;
+    }
+    button {
+      background: #0288d1;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0.2rem;
+    }
+    button:hover {
+      background: #0277bd;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 0.5rem;
+      border-bottom: 1px solid #ccc;
+      text-align: left;
+    }
+    .inactive {
+      color: #888;
+    }
+  </style>
+</head>
+<body>
 
-  th, td {
-    padding: 10px;
-    border: 1px solid #ccc;
-    text-align: left;
-  }
+<h2>Painel de Usuários Autorizados</h2>
 
-  .inactive {
-    color: #aaa;
-  }
-
-  .highlight-date {
-    background-color: #e6f0ff;
-  }
-
-  thead {
-    background-color: #f4f4f4;
-  }
-
-  .action-btn {
-    margin-right: 5px;
-  }
-</style>
-
-<input type="text" id="searchInput" placeholder="Buscar por e-mail ou status..." oninput="filtrarEmails()">
+<div class="controls">
+  <input type="email" id="emailInput" placeholder="Novo e-mail autorizado" required />
+  <select id="statusInput">
+    <option value="ativo">Ativo</option>
+    <option value="inativo">Inativo</option>
+  </select>
+  <button id="addBtn">Adicionar</button>
+  <input type="text" id="searchInput" placeholder="Buscar e-mail ou status" />
+  <select id="sortSelect">
+    <option value="email">Ordenar por E-mail</option>
+    <option value="created">Ordenar por Data</option>
+    <option value="status">Ordenar por Status</option>
+  </select>
+  <button id="logoutBtn">Sair</button>
+</div>
 
 <table>
   <thead>
     <tr>
-      <th onclick="ordenarEmails('email')">E-mail</th>
-      <th onclick="ordenarEmails('status')">Status</th>
-      <th onclick="ordenarEmails('created')">Criado em</th>
+      <th>E-mail</th>
+      <th>Status</th>
       <th>Ações</th>
     </tr>
   </thead>
@@ -42,46 +83,61 @@
 </table>
 
 <script type="module">
-  import { db } from "./firebase-config.js";
-  import {
-    collection, getDocs, setDoc, doc, deleteDoc, updateDoc, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-lite.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+  import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const emailInput = document.getElementById("emailInput");
+  const statusInput = document.getElementById("statusInput");
+  const addBtn = document.getElementById("addBtn");
   const emailTable = document.getElementById("emailTable");
   const searchInput = document.getElementById("searchInput");
-  let listaEmails = [];
-  let ordemAtual = { campo: "", crescente: true };
+  const sortSelect = document.getElementById("sortSelect");
 
   async function carregarEmails() {
-    const querySnapshot = await getDocs(collection(db, "autorizados"));
-    listaEmails = [];
-    querySnapshot.forEach((docSnap) => {
-      const dados = docSnap.data();
-      listaEmails.push({
+    emailTable.innerHTML = "";
+    const snapshot = await getDocs(collection(db, "autorizados"));
+    let lista = [];
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      lista.push({
         email: docSnap.id,
-        status: dados.status || "ativo",
-        created: dados.created?.toDate ? dados.created.toDate() : null
+        status: data.status || "ativo",
+        created: data.created ? data.created.toDate() : new Date(0)
       });
     });
-    exibirEmails(listaEmails);
-  }
 
-  function exibirEmails(lista) {
-    emailTable.innerHTML = "";
+    const termoBusca = searchInput.value.toLowerCase();
+    if (termoBusca) {
+      lista = lista.filter(user =>
+        user.email.toLowerCase().includes(termoBusca) ||
+        user.status.toLowerCase().includes(termoBusca)
+      );
+    }
+
+    const ordem = sortSelect.value;
+    lista.sort((a, b) => {
+      if (ordem === "email") return a.email.localeCompare(b.email);
+      if (ordem === "status") return a.status.localeCompare(b.status);
+      if (ordem === "created") return a.created - b.created;
+      return 0;
+    });
+
     lista.forEach(user => {
-      const dataFormatada = user.created
-        ? user.created.toLocaleDateString("pt-BR") + " " + user.created.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })
-        : "-";
-
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td contenteditable="true" data-email="${user.email}">${user.email}</td>
         <td>${user.status}</td>
-        <td class="highlight-date">${dataFormatada}</td>
         <td>
-          <button class="action-btn" onclick="alterarStatus('${user.email}', '${user.status}')">Alterar Status</button>
-          <button class="action-btn" onclick="editarEmail('${user.email}', this)">Salvar Edição</button>
-          <button class="action-btn" onclick="excluirEmail('${user.email}')">Excluir</button>
+          <button onclick="alterarStatus('${user.email}', '${user.status}')">Alterar Status</button>
+          <button onclick="editarEmail('${user.email}', this)">Salvar Edição</button>
+          <button onclick="excluirEmail('${user.email}')">Excluir</button>
         </td>
       `;
       if (user.status === "inativo") tr.classList.add("inactive");
@@ -89,57 +145,60 @@
     });
   }
 
-  function filtrarEmails() {
-    const termo = searchInput.value.toLowerCase();
-    const filtrados = listaEmails.filter(u =>
-      u.email.toLowerCase().includes(termo) ||
-      u.status.toLowerCase().includes(termo)
-    );
-    exibirEmails(filtrados);
-  }
-
-  function ordenarEmails(campo) {
-    const crescente = ordemAtual.campo === campo ? !ordemAtual.crescente : true;
-    ordemAtual = { campo, crescente };
-    listaEmails.sort((a, b) => {
-      const valA = a[campo] ?? "";
-      const valB = b[campo] ?? "";
-      if (campo === "created") {
-        return crescente
-          ? (valA?.getTime?.() || 0) - (valB?.getTime?.() || 0)
-          : (valB?.getTime?.() || 0) - (valA?.getTime?.() || 0);
-      }
-      return crescente
-        ? valA.toString().localeCompare(valB.toString())
-        : valB.toString().localeCompare(valA.toString());
-    });
-    exibirEmails(listaEmails);
-  }
-
-  window.alterarStatus = async (email, status) => {
-    const novoStatus = status === "ativo" ? "inativo" : "ativo";
-    await updateDoc(doc(db, "autorizados", email), { status: novoStatus });
-    carregarEmails();
-  };
-
-  window.editarEmail = async (antigoEmail, botao) => {
-    const td = botao.closest("tr").children[0];
-    const novoEmail = td.innerText.trim();
-    if (!novoEmail || novoEmail === antigoEmail) return;
-    const docAntigo = doc(db, "autorizados", antigoEmail);
-    const dadosAntigos = (await getDocs(collection(db, "autorizados"))).docs.find(d => d.id === antigoEmail)?.data();
-    if (!dadosAntigos) return;
-    await setDoc(doc(db, "autorizados", novoEmail), { ...dadosAntigos });
-    await deleteDoc(docAntigo);
-    carregarEmails();
-  };
-
-  window.excluirEmail = async (email) => {
-    if (confirm(`Tem certeza que deseja excluir o e-mail ${email}?`)) {
-      await deleteDoc(doc(db, "autorizados", email));
+  window.editarEmail = async (emailAntigo, btn) => {
+    const td = btn.parentElement.parentElement.querySelector("td[contenteditable]");
+    const novoEmail = td.textContent.trim();
+    if (novoEmail && novoEmail !== emailAntigo) {
+      const refAntigo = doc(db, "autorizados", emailAntigo);
+      const refNovo = doc(db, "autorizados", novoEmail);
+      const docSnap = await refAntigo.get();
+      const dados = docSnap.exists() ? docSnap.data() : { status: "ativo", created: serverTimestamp() };
+      await setDoc(refNovo, dados);
+      await deleteDoc(refAntigo);
       carregarEmails();
     }
   };
 
-  carregarEmails();
+  window.alterarStatus = async (email, statusAtual) => {
+    const novoStatus = statusAtual === "ativo" ? "inativo" : "ativo";
+    await updateDoc(doc(db, "autorizados", email), { status: novoStatus });
+    carregarEmails();
+  };
+
+  window.excluirEmail = async (email) => {
+    await deleteDoc(doc(db, "autorizados", email));
+    carregarEmails();
+  };
+
+  addBtn.addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const status = statusInput.value;
+    if (email) {
+      await setDoc(doc(db, "autorizados", email), {
+        status,
+        created: serverTimestamp()
+      });
+      emailInput.value = "";
+      carregarEmails();
+    }
+  });
+
+  searchInput.addEventListener("input", carregarEmails);
+  sortSelect.addEventListener("change", carregarEmails);
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await signOut(auth);
+    window.location.href = "admin-login.html";
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if (!user || user.uid !== ADMIN_UID) {
+      window.location.href = "admin-login.html";
+    } else {
+      carregarEmails();
+    }
+  });
 </script>
+
+</body>
+</html>
