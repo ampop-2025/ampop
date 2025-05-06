@@ -2,191 +2,223 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel Administrativo - ampConnect</title>
-  <script type="module" src="./firebase-config.js"></script>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { firebaseConfig, ADMIN_UID } from './firebase-config.js';
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const usersTable = document.getElementById("users-table-body");
-
-    function formatDate(timestamp) {
-      const date = timestamp.toDate();
-      return date.toLocaleDateString() + " " + date.toLocaleTimeString();
-    }
-
-    function renderUser(uid, data) {
-      const tr = document.createElement("tr");
-
-      tr.innerHTML = `
-        <td>${data.email}</td>
-        <td>${data.role || ''}</td>
-        <td>${data.ativo ? 'Ativo' : 'Inativo'}</td>
-        <td>${data.createdAt ? formatDate(data.createdAt) : '-'}</td>
-        <td>
-          <button onclick="toggleStatus('${uid}', ${data.ativo})">${data.ativo ? 'Desativar' : 'Ativar'}</button>
-          <button onclick="deleteUser('${uid}')">Excluir</button>
-        </td>
-      `;
-
-      usersTable.appendChild(tr);
-    }
-
-    window.toggleStatus = async (uid, currentStatus) => {
-      await updateDoc(doc(db, "autorizados", uid), {
-        ativo: !currentStatus
-      });
-      location.reload();
-    };
-
-    window.deleteUser = async (uid) => {
-      if (confirm("Tem certeza que deseja excluir este usuário?")) {
-        await deleteDoc(doc(db, "autorizados", uid));
-        location.reload();
-      }
-    };
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user && user.uid === ADMIN_UID) {
-        const snapshot = await getDocs(collection(db, "autorizados"));
-        snapshot.forEach(doc => {
-          renderUser(doc.id, doc.data());
-        });
-      } else {
-        window.location.href = "admin-login.html";
-      }
-    });
-
-    document.getElementById("logout").addEventListener("click", () => {
-      signOut(auth).then(() => window.location.href = "admin-login.html");
-    });
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel Administrativo</title>
   <style>
-    :root {
-      --primary-color: #007bff;
-      --background-color: #f0f4f8;
-      --card-color: #fff;
-      --accent-color: #ff6600;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      margin: 0;
-      font-family: "Segoe UI", sans-serif;
-      background: var(--background-color);
+      background: #f5f5f5;
       color: #333;
-      overflow-x: hidden;
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      margin: 0;
     }
-
-    .container {
-      max-width: 100%;
-      padding: 1rem;
+    h2 {
+      color: #007BFF;
+      font-size: 1.5rem;
     }
-
-    h1 {
-      text-align: center;
-      color: var(--primary-color);
-    }
-
-    .logout-btn {
-      display: block;
-      margin: 0 auto 1rem auto;
-      padding: 0.5rem 1rem;
-      background-color: var(--accent-color);
+    button {
+      background: #007BFF;
       border: none;
-      color: #fff;
+      padding: 0.5rem 1rem;
       border-radius: 5px;
       cursor: pointer;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 1rem;
     }
-
+    input[type="text"],
+    input[type="email"] {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
     .table-container {
-      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 70vh;
     }
-
     table {
       width: 100%;
+      margin-top: 2rem;
       border-collapse: collapse;
-      margin: auto;
-      background-color: var(--card-color);
-      border-radius: 8px;
-      overflow: hidden;
+      table-layout: auto;
     }
-
     th, td {
-      padding: 12px 10px;
+      padding: 0.8rem;
       text-align: left;
-      border-bottom: 1px solid #ddd;
-      font-size: 0.95rem;
+      border: 1px solid #ddd;
     }
-
     th {
-      background-color: #eaeaea;
-    }
-
-    button {
-      margin: 2px;
-      padding: 5px 10px;
-      border: none;
-      background-color: var(--primary-color);
+      background-color: #007BFF;
       color: #fff;
-      border-radius: 4px;
+    }
+    td {
+      background-color: #fff;
+    }
+    .status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .status.ativo {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .status.inativo {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    .actions button {
+      padding: 0.25rem 0.5rem;
+      background: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      margin: 0 5px;
     }
-
-    button:hover {
-      background-color: #0056b3;
-    }
-
-    @media (max-width: 600px) {
-      th, td {
-        padding: 10px 6px;
-        font-size: 0.85rem;
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
       }
-
-      h1 {
-        font-size: 1.5rem;
+      h2 {
+        font-size: 1.25rem;
       }
-
-      .logout-btn {
+      table {
         font-size: 0.9rem;
-        padding: 0.4rem 0.8rem;
       }
-
-      button {
-        font-size: 0.8rem;
-        padding: 4px 8px;
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
       }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Painel Administrativo - ampConnect</h1>
-    <button id="logout" class="logout-btn">Sair</button>
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Função</th>
-            <th>Status</th>
-            <th>Data de Criação</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="users-table-body"></tbody>
-      </table>
-    </div>
+  <h2>Usuários Autorizados</h2>
+
+  <input type="text" id="searchInput" placeholder="Buscar e-mail" />
+
+  <div class="table-container">
+    <table id="emailTable">
+      <thead>
+        <tr>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>Data/Hora</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="emailList"></tbody>
+    </table>
   </div>
+
+  <form id="addEmailForm">
+    <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <button id="logoutBtn">Sair</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      deleteDoc,
+      updateDoc,
+      doc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const emailList = document.getElementById("emailList");
+    const emailInput = document.getElementById("emailInput");
+    const addEmailForm = document.getElementById("addEmailForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const searchInput = document.getElementById("searchInput");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || user.uid !== ADMIN_UID) {
+        window.location.href = "admin-login.html";
+      } else {
+        loadEmails();
+      }
+    });
+
+    async function loadEmails() {
+      emailList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "autorizados"));
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+
+        const createdAt = data.createdAt?.toDate?.().toLocaleString("pt-BR") || "—";
+
+        tr.innerHTML = `
+          <td>${data.email}</td>
+          <td><span class="status ${data.ativo ? "ativo" : "inativo"}">${data.ativo ? "Ativo" : "Inativo"}</span></td>
+          <td>${createdAt}</td>
+          <td class="actions">
+            <button onclick="toggleStatus('${docSnap.id}', ${!data.ativo})">${data.ativo ? "Desativar" : "Ativar"}</button>
+            <button onclick="deleteEmail('${docSnap.id}')">Excluir</button>
+          </td>
+        `;
+        emailList.appendChild(tr);
+      });
+    }
+
+    window.toggleStatus = async (id, newStatus) => {
+      await updateDoc(doc(db, "autorizados", id), { ativo: newStatus });
+      loadEmails();
+    };
+
+    window.deleteEmail = async (id) => {
+      if (confirm("Deseja realmente excluir este e-mail?")) {
+        await deleteDoc(doc(db, "autorizados", id));
+        loadEmails();
+      }
+    };
+
+    addEmailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+      await addDoc(collection(db, "autorizados"), {
+        email,
+        ativo: true,
+        createdAt: serverTimestamp()
+      });
+      emailInput.value = "";
+      loadEmails();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth);
+    });
+
+    searchInput.addEventListener("input", () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      const rows = emailList.getElementsByTagName("tr");
+      for (let row of rows) {
+        const email = row.children[0].textContent.toLowerCase();
+        row.style.display = email.includes(searchTerm) ? "" : "none";
+      }
+    });
+  </script>
 </body>
 </html>
