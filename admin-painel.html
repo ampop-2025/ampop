@@ -77,7 +77,6 @@
       cursor: pointer;
       margin: 0 5px;
     }
-    /* Responsividade */
     @media (max-width: 768px) {
       body {
         padding: 1rem;
@@ -87,10 +86,6 @@
       }
       table {
         font-size: 0.9rem;
-      }
-      .actions button {
-        margin: 0.25rem 0;
-        width: 100%;
       }
       .actions {
         display: flex;
@@ -126,7 +121,103 @@
 
   <button id="logoutBtn">Sair</button>
 
-  <!-- JavaScript igual ao anterior, já funcional -->
-  <script type="module" src="admin-script.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      addDoc,
+      deleteDoc,
+      updateDoc,
+      doc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const emailList = document.getElementById("emailList");
+    const emailInput = document.getElementById("emailInput");
+    const addEmailForm = document.getElementById("addEmailForm");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const searchInput = document.getElementById("searchInput");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || user.uid !== ADMIN_UID) {
+        window.location.href = "admin-login.html";
+      } else {
+        loadEmails();
+      }
+    });
+
+    async function loadEmails() {
+      emailList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "autorizados"));
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+
+        const createdAt = data.createdAt?.toDate?.().toLocaleString("pt-BR") || "—";
+
+        tr.innerHTML = `
+          <td>${data.email}</td>
+          <td><span class="status ${data.ativo ? "ativo" : "inativo"}">${data.ativo ? "Ativo" : "Inativo"}</span></td>
+          <td>${createdAt}</td>
+          <td class="actions">
+            <button onclick="toggleStatus('${docSnap.id}', ${!data.ativo})">${data.ativo ? "Desativar" : "Ativar"}</button>
+            <button onclick="deleteEmail('${docSnap.id}')">Excluir</button>
+          </td>
+        `;
+        emailList.appendChild(tr);
+      });
+    }
+
+    window.toggleStatus = async (id, newStatus) => {
+      await updateDoc(doc(db, "autorizados", id), { ativo: newStatus });
+      loadEmails();
+    };
+
+    window.deleteEmail = async (id) => {
+      if (confirm("Deseja realmente excluir este e-mail?")) {
+        await deleteDoc(doc(db, "autorizados", id));
+        loadEmails();
+      }
+    };
+
+    addEmailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (!email) return;
+      await addDoc(collection(db, "autorizados"), {
+        email,
+        ativo: true,
+        createdAt: serverTimestamp()
+      });
+      emailInput.value = "";
+      loadEmails();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth);
+    });
+
+    searchInput.addEventListener("input", () => {
+      const searchTerm = searchInput.value.toLowerCase();
+      const rows = emailList.getElementsByTagName("tr");
+      for (let row of rows) {
+        const email = row.children[0].textContent.toLowerCase();
+        row.style.display = email.includes(searchTerm) ? "" : "none";
+      }
+    });
+  </script>
 </body>
 </html>
