@@ -2,13 +2,13 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login do Administrador - ampConnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login Administrador</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #1c1c1c;
+      background: linear-gradient(to right, #121212, #1f1f1f);
       color: #fff;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -16,62 +16,48 @@
       height: 100vh;
       margin: 0;
     }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
     form {
-      display: flex;
-      flex-direction: column;
-      width: 300px;
+      background: #2a2a2a;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
     }
-
-    input, button {
-      padding: 10px;
-      margin: 5px 0;
-      font-size: 1rem;
-    }
-
-    button {
-      background-color: #ff9800;
-      color: white;
+    input {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
       border: none;
+      border-radius: 5px;
+    }
+    button {
+      background: orange;
+      border: none;
+      padding: 0.7rem 1.5rem;
+      border-radius: 5px;
       cursor: pointer;
+      color: #000;
+      font-weight: bold;
     }
-
-    button:hover {
-      background-color: #e68900;
-    }
-
-    .error {
-      color: #f44336;
-      margin-top: 10px;
+    #errorMsg {
+      margin-top: 1rem;
+      color: red;
     }
   </style>
 </head>
 <body>
-  <h1>Login Administrador</h1>
+  <h2>Login Administrador</h2>
   <form id="loginForm">
-    <input type="email" id="email" placeholder="E-mail" required />
+    <input type="email" id="email" placeholder="Email" required />
     <input type="password" id="password" placeholder="Senha" required />
     <button type="submit">Entrar</button>
-    <div class="error" id="errorMsg"></div>
   </form>
+  <div id="errorMsg"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-
-    // ✅ Substitua pelas suas credenciais:
-const firebaseConfig = {
-  apiKey: "AIzaSyDJ6N3zQkTzyiMR27pfvE-iE1qCE_5zavg",
-  authDomain: "ampop-4c96f.firebaseapp.com",
-  projectId: "ampop-4c96f",
-  storageBucket: "ampop-4c96f.firebasestorage.app",
-  messagingSenderId: "1008863242618",
-  appId: "1:1008863242618:web:caab3844b7af163d0a0ec3"
-};
+    import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -81,15 +67,15 @@ const firebaseConfig = {
 
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
       try {
         const cred = await signInWithEmailAndPassword(auth, email, password);
-        if (cred.user.email === "admin@ampop.com") {
+        if (cred.user.uid === ADMIN_UID) {
           window.location.href = "admin-painel.html";
         } else {
-          errorMsg.textContent = "Você não tem permissão para acessar esta área.";
+          errorMsg.textContent = "Acesso negado: usuário não autorizado.";
         }
       } catch (error) {
         errorMsg.textContent = "Erro ao fazer login: " + error.message;
