@@ -4,109 +4,91 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Painel Administrativo</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(to bottom, #e8f1ff, #ffffff);
-      color: #003366;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #e3f2fd, #bbdefb);
+      color: #0d47a1;
       display: flex;
       flex-direction: column;
       align-items: center;
       padding: 2rem;
-      min-height: 100vh;
     }
-
     h2 {
-      font-size: 2rem;
-      font-weight: 600;
       margin-bottom: 1.5rem;
     }
-
-    form {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-bottom: 2rem;
-    }
-
-    input[type="email"] {
-      padding: 0.7rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      width: 280px;
-    }
-
-    button {
-      background: #0066cc;
-      color: white;
-      border: none;
-      padding: 0.7rem 1.2rem;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background: #0052a3;
-    }
-
-    .list-container {
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 1rem;
+      margin: 0.5rem;
       width: 100%;
-      max-width: 700px;
-    }
-
-    .user-item {
+      max-width: 500px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #ffffff;
-      border: 1px solid #d0e2ff;
-      border-radius: 8px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
-
-    .user-info {
+    .info {
       display: flex;
       flex-direction: column;
     }
-
-    .user-email {
-      font-weight: 600;
+    .email {
+      font-weight: bold;
     }
-
-    .user-status {
+    .status {
       font-size: 0.9rem;
-      color: #0077cc;
+      color: #555;
     }
-
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    button {
+      background: #0d47a1;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
+    }
+    form {
+      margin-top: 2rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    input[type="email"] {
+      padding: 0.5rem;
+      border: 1px solid #90caf9;
+      border-radius: 6px;
+      width: 250px;
+    }
     #logoutBtn {
       margin-top: 2rem;
+      background: #ef5350;
     }
   </style>
 </head>
 <body>
   <h2>Painel Administrativo - Usuários Autorizados</h2>
+  <div id="emailList"></div>
 
   <form id="addEmailForm">
     <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
     <button type="submit">Adicionar</button>
   </form>
 
-  <div class="list-container" id="emailList"></div>
-
   <button id="logoutBtn">Sair</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -121,32 +103,50 @@
       emailList.innerHTML = "";
       const querySnapshot = await getDocs(collection(db, "autorizados"));
       querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const isActive = data.ativo !== false; // padrão: ativo se não definido
+
         const div = document.createElement("div");
-        div.className = "user-item";
+        div.className = "card";
 
-        const userInfo = document.createElement("div");
-        userInfo.className = "user-info";
+        const info = document.createElement("div");
+        info.className = "info";
 
-        const emailEl = document.createElement("span");
-        emailEl.className = "user-email";
-        emailEl.textContent = docSnap.id;
+        const email = document.createElement("div");
+        email.className = "email";
+        email.textContent = docSnap.id;
 
-        const statusEl = document.createElement("span");
-        statusEl.className = "user-status";
-        statusEl.textContent = "Status: Ativo"; // Por enquanto sempre ativo
+        const status = document.createElement("div");
+        status.className = "status";
+        status.textContent = isActive ? "Status: Ativo" : "Status: Inativo";
 
-        userInfo.appendChild(emailEl);
-        userInfo.appendChild(statusEl);
+        info.appendChild(email);
+        info.appendChild(status);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.textContent = isActive ? "Desativar" : "Ativar";
+        toggleBtn.onclick = async () => {
+          await updateDoc(doc(db, "autorizados", docSnap.id), { ativo: !isActive });
+          carregarEmails();
+        };
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "Excluir";
         delBtn.onclick = async () => {
-          await deleteDoc(doc(db, "autorizados", docSnap.id));
-          carregarEmails();
+          if (confirm("Tem certeza que deseja excluir este email?")) {
+            await deleteDoc(doc(db, "autorizados", docSnap.id));
+            carregarEmails();
+          }
         };
 
-        div.appendChild(userInfo);
-        div.appendChild(delBtn);
+        actions.appendChild(toggleBtn);
+        actions.appendChild(delBtn);
+
+        div.appendChild(info);
+        div.appendChild(actions);
         emailList.appendChild(div);
       });
     }
@@ -155,7 +155,7 @@
       e.preventDefault();
       const email = emailInput.value.trim();
       if (email) {
-        await setDoc(doc(db, "autorizados", email), { autorizado: true });
+        await setDoc(doc(db, "autorizados", email), { autorizado: true, ativo: true });
         emailInput.value = "";
         carregarEmails();
       }
