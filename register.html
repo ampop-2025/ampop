@@ -48,9 +48,11 @@
       margin-top: 1rem;
       text-align: center;
       font-size: 0.95rem;
+    }
+    .message.success {
       color: green;
     }
-    .error {
+    .message.error {
       color: red;
     }
   </style>
@@ -79,26 +81,28 @@
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
+      message.textContent = "";
+      message.className = "message";
+
       if (!email || !password) {
         message.textContent = "Preencha todos os campos.";
         message.className = "message error";
         return;
       }
 
-      // Verifica se o e-mail está autorizado e ativo
-      const q = query(collection(db, "autorizados"), where("email", "==", email), where("ativo", "==", true));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        message.textContent = "Este e-mail não está autorizado.";
-        message.className = "message error";
-        return;
-      }
-
       try {
+        const q = query(collection(db, "autorizados"), where("email", "==", email), where("ativo", "==", true));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          message.textContent = "Este e-mail não está autorizado.";
+          message.className = "message error";
+          return;
+        }
+
         await createUserWithEmailAndPassword(auth, email, password);
         message.textContent = "Usuário cadastrado com sucesso! Redirecionando...";
-        message.className = "message";
+        message.className = "message success";
 
         setTimeout(() => {
           window.location.href = "login.html";
