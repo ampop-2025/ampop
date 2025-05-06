@@ -3,91 +3,126 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel Administrativo</title>
+  <title>Admin | ampConnect</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #e6f0ff;
+      background: #e9f0f7;
+      margin: 0;
       padding: 2rem;
     }
-    h2 {
-      color: #007bff;
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
     }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    #emailInput {
+      padding: 0.5rem;
+      width: 60%;
+      margin-right: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    #addBtn {
+      padding: 0.5rem 1rem;
+      background-color: orange;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
     table {
       width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-      background: white;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-    th {
-      background: #007bff;
-      color: white;
-    }
-    .status {
-      font-weight: bold;
-      padding: 5px 10px;
-      border-radius: 5px;
-      color: white;
-    }
-    .ativo {
-      background: green;
-    }
-    .inativo {
-      background: red;
-    }
-    button {
-      padding: 5px 10px;
-      margin-right: 5px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-status {
-      background: #ffc107;
-    }
-    .btn-delete {
-      background: #dc3545;
-      color: white;
-    }
-    #logoutBtn {
       margin-top: 2rem;
-      background: #007bff;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f4f4f4;
+    }
+
+    .status.ativo {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status.inativo {
+      color: red;
+      font-weight: bold;
+    }
+
+    .btn-status, .btn-delete {
+      margin-right: 0.5rem;
+      padding: 0.4rem 0.8rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-status {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-delete {
+      background-color: #dc3545;
       color: white;
     }
   </style>
 </head>
 <body>
-  <h2>Gerenciar Usuários Autorizados</h2>
+  <div class="container">
+    <h1>Painel Administrativo</h1>
+    <input type="email" id="emailInput" placeholder="Novo e-mail autorizado" />
+    <button id="addBtn">Adicionar</button>
 
-  <input type="email" id="emailInput" placeholder="Novo e-mail autorizado" />
-  <button id="addBtn">Adicionar</button>
-
-  <table>
-    <thead>
-      <tr>
-        <th>E-mail</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody id="userTable"></tbody>
-  </table>
-
-  <button id="logoutBtn">Sair</button>
+    <table>
+      <thead>
+        <tr>
+          <th>E-mail</th>
+          <th>Status</th>
+          <th>Criado em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="userTable"></tbody>
+    </table>
+  </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+      getFirestore,
+      collection,
+      getDocs,
+      setDoc,
+      doc,
+      updateDoc,
+      deleteDoc,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import {
-      getAuth, onAuthStateChanged, signOut
-    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+      getAuth,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -97,7 +132,19 @@
     const emailInput = document.getElementById("emailInput");
     const userTable = document.getElementById("userTable");
 
-    function renderUser(email, status) {
+    document.getElementById("addBtn").addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (email) {
+        await setDoc(doc(db, "autorizados", email), {
+          status: "ativo",
+          createdAt: new Date()
+        });
+        emailInput.value = "";
+        loadUsers();
+      }
+    });
+
+    function renderUser(email, status, createdAt) {
       const tr = document.createElement("tr");
 
       const tdEmail = document.createElement("td");
@@ -105,6 +152,13 @@
 
       const tdStatus = document.createElement("td");
       tdStatus.innerHTML = `<span class="status ${status}">${status}</span>`;
+
+      const tdCreated = document.createElement("td");
+      if (createdAt && createdAt.toDate) {
+        tdCreated.textContent = createdAt.toDate().toLocaleString("pt-BR");
+      } else {
+        tdCreated.textContent = "-";
+      }
 
       const tdActions = document.createElement("td");
 
@@ -132,6 +186,7 @@
 
       tr.appendChild(tdEmail);
       tr.appendChild(tdStatus);
+      tr.appendChild(tdCreated);
       tr.appendChild(tdActions);
       userTable.appendChild(tr);
     }
@@ -139,30 +194,17 @@
     async function loadUsers() {
       userTable.innerHTML = "";
       const querySnapshot = await getDocs(collection(db, "autorizados"));
-      querySnapshot.forEach((doc) => {
-        renderUser(doc.id, doc.data().status || "inativo");
+      querySnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        renderUser(docSnap.id, data.status || "inativo", data.createdAt);
       });
     }
 
-    document.getElementById("addBtn").addEventListener("click", async () => {
-      const email = emailInput.value.trim();
-      if (email) {
-        await setDoc(doc(db, "autorizados", email), { status: "ativo" });
-        emailInput.value = "";
-        loadUsers();
-      }
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "admin-login.html";
-    });
-
     onAuthStateChanged(auth, (user) => {
-      if (!user || user.uid !== ADMIN_UID) {
-        window.location.href = "admin-login.html";
-      } else {
+      if (user && user.uid === ADMIN_UID) {
         loadUsers();
+      } else {
+        window.location.href = "admin-login.html";
       }
     });
   </script>
