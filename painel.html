@@ -60,9 +60,37 @@
     .error {
       color: red;
     }
+
+    /* Estilo para o cabeçalho */
+    header {
+      background: #007BFF;
+      color: white;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-info {
+      font-size: 1rem;
+    }
+
+    .logout-btn {
+      background: #d9534f;
+      padding: 0.5rem 1rem;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <div class="user-info" id="userInfo"></div>
+    <button class="logout-btn" onclick="logout()">Sair</button>
+  </header>
+
   <div class="container">
     <div class="card">
       <h2>Adicionar Novo Dispositivo</h2>
@@ -88,6 +116,26 @@
     const db = getFirestore(app);
     const message = document.getElementById("message");
 
+    // Exibir nome do usuário logado
+    function exibirNomeUsuario() {
+      const user = auth.currentUser;
+      if (user) {
+        document.getElementById("userInfo").textContent = `Bem-vindo, ${user.displayName || user.email}`;
+      }
+    }
+
+    // Função de logout
+    function logout() {
+      auth.signOut()
+        .then(() => {
+          window.location.href = 'user-login.html'; // Redireciona para o login após sair
+        })
+        .catch((error) => {
+          console.error("Erro ao sair:", error.message);
+        });
+    }
+
+    // Função para adicionar dispositivo
     async function adicionarDispositivo() {
       const deviceName = document.getElementById("deviceName").value.trim();
 
@@ -125,6 +173,7 @@
       }
     }
 
+    // Função para gerar ID único do dispositivo
     function gerarDeviceId() {
       const prefixo = "esp32-c3-";
       const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -135,6 +184,7 @@
       return deviceId;
     }
 
+    // Função para listar dispositivos
     async function listarDispositivos() {
       const user = auth.currentUser;
       if (!user) return;
@@ -154,7 +204,10 @@
     }
 
     // Carrega dispositivos ao iniciar a página
-    window.onload = listarDispositivos;
+    window.onload = () => {
+      listarDispositivos();
+      exibirNomeUsuario(); // Exibe o nome do usuário
+    };
   </script>
 </body>
 </html>
