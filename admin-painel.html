@@ -3,210 +3,130 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin | ampConnect</title>
+  <title>Painel Administrativo</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #e9f0f7;
-      margin: 0;
-      padding: 2rem;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      text-align: center;
+      background: #f5f5f5;
       color: #333;
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      margin: 0;
     }
-
-    #emailInput {
-      padding: 0.5rem;
-      width: 60%;
-      margin-right: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+    h2 {
+      color: #007BFF;
+      font-size: 1.5rem;
     }
-
-    #addBtn {
-      padding: 0.5rem 1rem;
-      background-color: orange;
+    button {
+      background: #007BFF;
       border: none;
-      color: white;
-      font-weight: bold;
-      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
       cursor: pointer;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 1rem;
     }
-
+    input[type="text"],
+    input[type="email"] {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
     table {
       width: 100%;
       margin-top: 2rem;
       border-collapse: collapse;
+      min-width: 600px;
     }
-
     th, td {
-      padding: 0.75rem;
+      padding: 0.8rem;
       text-align: left;
-      border-bottom: 1px solid #ddd;
+      border: 1px solid #ddd;
     }
-
     th {
-      background-color: #f4f4f4;
+      background-color: #007BFF;
+      color: #fff;
     }
-
+    td {
+      background-color: #fff;
+    }
+    .status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
+      font-weight: bold;
+    }
     .status.ativo {
-      color: green;
-      font-weight: bold;
+      background-color: #28a745;
+      color: #fff;
     }
-
     .status.inativo {
-      color: red;
-      font-weight: bold;
-    }
-
-    .btn-status, .btn-delete {
-      margin-right: 0.5rem;
-      padding: 0.4rem 0.8rem;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .btn-status {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .btn-delete {
       background-color: #dc3545;
-      color: white;
+      color: #fff;
+    }
+    .actions button {
+      padding: 0.25rem 0.5rem;
+      background: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    /* Responsividade */
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      h2 {
+        font-size: 1.25rem;
+      }
+      table {
+        font-size: 0.9rem;
+      }
+      .actions button {
+        margin: 0.25rem 0;
+        width: 100%;
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Painel Administrativo</h1>
-    <input type="email" id="emailInput" placeholder="Novo e-mail autorizado" />
-    <button id="addBtn">Adicionar</button>
+  <h2>Usuários Autorizados</h2>
 
-    <table>
+  <input type="text" id="searchInput" placeholder="Buscar e-mail" />
+
+  <div class="table-container">
+    <table id="emailTable">
       <thead>
         <tr>
           <th>E-mail</th>
           <th>Status</th>
-          <th>Criado em</th>
+          <th>Data/Hora</th>
           <th>Ações</th>
         </tr>
       </thead>
-      <tbody id="userTable"></tbody>
+      <tbody id="emailList"></tbody>
     </table>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      setDoc,
-      doc,
-      updateDoc,
-      deleteDoc,
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
+  <form id="addEmailForm">
+    <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
+    <button type="submit">Adicionar</button>
+  </form>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+  <button id="logoutBtn">Sair</button>
 
-    const emailInput = document.getElementById("emailInput");
-    const userTable = document.getElementById("userTable");
-
-    document.getElementById("addBtn").addEventListener("click", async () => {
-      const email = emailInput.value.trim();
-      if (email) {
-        await setDoc(doc(db, "autorizados", email), {
-          status: "ativo",
-          createdAt: new Date()
-        });
-        emailInput.value = "";
-        loadUsers();
-      }
-    });
-
-    function renderUser(email, status, createdAt) {
-      const tr = document.createElement("tr");
-
-      const tdEmail = document.createElement("td");
-      tdEmail.textContent = email;
-
-      const tdStatus = document.createElement("td");
-      tdStatus.innerHTML = `<span class="status ${status}">${status}</span>`;
-
-      const tdCreated = document.createElement("td");
-      if (createdAt && createdAt.toDate) {
-        tdCreated.textContent = createdAt.toDate().toLocaleString("pt-BR");
-      } else {
-        tdCreated.textContent = "-";
-      }
-
-      const tdActions = document.createElement("td");
-
-      const btnToggle = document.createElement("button");
-      btnToggle.textContent = "Alterar Status";
-      btnToggle.className = "btn-status";
-      btnToggle.onclick = async () => {
-        const newStatus = status === "ativo" ? "inativo" : "ativo";
-        await updateDoc(doc(db, "autorizados", email), { status: newStatus });
-        loadUsers();
-      };
-
-      const btnDelete = document.createElement("button");
-      btnDelete.textContent = "Excluir";
-      btnDelete.className = "btn-delete";
-      btnDelete.onclick = async () => {
-        if (confirm(`Deseja excluir ${email}?`)) {
-          await deleteDoc(doc(db, "autorizados", email));
-          loadUsers();
-        }
-      };
-
-      tdActions.appendChild(btnToggle);
-      tdActions.appendChild(btnDelete);
-
-      tr.appendChild(tdEmail);
-      tr.appendChild(tdStatus);
-      tr.appendChild(tdCreated);
-      tr.appendChild(tdActions);
-      userTable.appendChild(tr);
-    }
-
-    async function loadUsers() {
-      userTable.innerHTML = "";
-      const querySnapshot = await getDocs(collection(db, "autorizados"));
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        renderUser(docSnap.id, data.status || "inativo", data.createdAt);
-      });
-    }
-
-    onAuthStateChanged(auth, (user) => {
-      if (user && user.uid === ADMIN_UID) {
-        loadUsers();
-      } else {
-        window.location.href = "admin-login.html";
-      }
-    });
-  </script>
+  <!-- JavaScript igual ao anterior, já funcional -->
+  <script type="module" src="admin-script.js"></script>
 </body>
 </html>
