@@ -9,8 +9,8 @@
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(to bottom, #0d0d0d, #1a1a1a);
-      color: #fff;
+      background: linear-gradient(to bottom, #e8f1ff, #ffffff);
+      color: #003366;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -19,84 +19,88 @@
     }
 
     h2 {
-      color: orange;
-      margin-bottom: 1rem;
+      font-size: 2rem;
       font-weight: 600;
-      font-size: 1.8rem;
+      margin-bottom: 1.5rem;
     }
 
-    form, ul {
-      width: 100%;
-      max-width: 500px;
+    form {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
     }
 
     input[type="email"] {
-      width: calc(100% - 110px);
-      padding: 0.6rem;
-      margin-right: 0.5rem;
+      padding: 0.7rem;
       border-radius: 8px;
-      border: none;
-      outline: none;
-      background: #2a2a2a;
-      color: #fff;
+      border: 1px solid #ccc;
       font-size: 1rem;
+      width: 280px;
     }
 
     button {
-      background: orange;
-      color: #111;
+      background: #0066cc;
+      color: white;
       border: none;
-      padding: 0.6rem 1rem;
+      padding: 0.7rem 1.2rem;
       border-radius: 8px;
-      font-weight: bold;
+      font-weight: 600;
       cursor: pointer;
       transition: background 0.3s;
     }
 
     button:hover {
-      background: #ff9900;
+      background: #0052a3;
     }
 
-    ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 1rem;
+    .list-container {
+      width: 100%;
+      max-width: 700px;
     }
 
-    li {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      padding: 0.75rem;
-      border-radius: 8px;
-      margin-bottom: 0.5rem;
+    .user-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: #ffffff;
+      border: 1px solid #d0e2ff;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .user-email {
+      font-weight: 600;
+    }
+
+    .user-status {
+      font-size: 0.9rem;
+      color: #0077cc;
     }
 
     #logoutBtn {
       margin-top: 2rem;
     }
-
-    @media (max-width: 600px) {
-      form {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      input[type="email"] {
-        width: 100%;
-        margin: 0;
-      }
-    }
   </style>
 </head>
 <body>
-  <h2>Usuários Autorizados</h2>
+  <h2>Painel Administrativo - Usuários Autorizados</h2>
+
   <form id="addEmailForm">
     <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
     <button type="submit">Adicionar</button>
   </form>
-  <ul id="emailList"></ul>
+
+  <div class="list-container" id="emailList"></div>
+
   <button id="logoutBtn">Sair</button>
 
   <script type="module">
@@ -117,16 +121,33 @@
       emailList.innerHTML = "";
       const querySnapshot = await getDocs(collection(db, "autorizados"));
       querySnapshot.forEach((docSnap) => {
-        const li = document.createElement("li");
-        li.textContent = docSnap.id;
+        const div = document.createElement("div");
+        div.className = "user-item";
+
+        const userInfo = document.createElement("div");
+        userInfo.className = "user-info";
+
+        const emailEl = document.createElement("span");
+        emailEl.className = "user-email";
+        emailEl.textContent = docSnap.id;
+
+        const statusEl = document.createElement("span");
+        statusEl.className = "user-status";
+        statusEl.textContent = "Status: Ativo"; // Por enquanto sempre ativo
+
+        userInfo.appendChild(emailEl);
+        userInfo.appendChild(statusEl);
+
         const delBtn = document.createElement("button");
         delBtn.textContent = "Excluir";
         delBtn.onclick = async () => {
           await deleteDoc(doc(db, "autorizados", docSnap.id));
           carregarEmails();
         };
-        li.appendChild(delBtn);
-        emailList.appendChild(li);
+
+        div.appendChild(userInfo);
+        div.appendChild(delBtn);
+        emailList.appendChild(div);
       });
     }
 
