@@ -3,82 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login Administrador</title>
+  <title>Painel Administrativo</title>
   <style>
     body {
-      background: linear-gradient(to right, #121212, #1f1f1f);
-      color: #fff;
+      background: #f5f5f5;
+      color: #333;
       font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    form {
-      background: #2a2a2a;
       padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #000;
     }
-    input {
-      display: block;
-      width: 100%;
-      margin-bottom: 1rem;
-      padding: 0.5rem;
-      border: none;
-      border-radius: 5px;
+    h2 {
+      color: #007BFF;
+      font-size: 1.5rem;
     }
     button {
-      background: orange;
+      background: #007BFF;
       border: none;
-      padding: 0.7rem 1.5rem;
+      padding: 0.5rem 1rem;
       border-radius: 5px;
       cursor: pointer;
-      color: #000;
+      color: #fff;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 0.5rem 0;
+      background: #fff;
+      padding: 0.5rem;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status {
+      padding: 0.25rem 0.5rem;
+      border-radius: 5px;
       font-weight: bold;
     }
-    #errorMsg {
-      margin-top: 1rem;
-      color: red;
+    .status.ativo {
+      background-color: #28a745;
+      color: #fff;
+    }
+    .status.inativo {
+      background-color: #dc3545;
+      color: #fff;
+    }
+    input[type="text"] {
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
   </style>
 </head>
 <body>
-  <h2>Login Administrador</h2>
-  <form id="loginForm">
-    <input type="email" id="email" placeholder="Email" required />
-    <input type="password" id="password" placeholder="Senha" required />
-    <button type="submit">Entrar</button>
+  <h2>Usuários Autorizados</h2>
+
+  <!-- Filtro de E-mails -->
+  <input type="text" id="searchInput" placeholder="Buscar e-mail" />
+
+  <ul id="emailList"></ul>
+
+  <form id="addEmailForm">
+    <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
+    <button type="submit">Adicionar</button>
   </form>
-  <div id="errorMsg"></div>
+
+  <button id="logoutBtn">Sair</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const loginForm = document.getElementById("loginForm");
-    const errorMsg = document.getElementById("errorMsg");
+    const emailList = document.getElementById("emailList");
+    const addEmailForm = document.getElementById("addEmailForm");
+    const emailInput = document.getElementById("emailInput");
+    const searchInput = document.getElementById("searchInput");
 
-    loginForm.addEventListener("submit", async (e) => {
+    // Função para carregar os e-mails da coleção
+    async function carregarEmails() {
+      emailList.innerHTML = "";
+      const querySnapshot = await getDocs(collection(db, "autorizados"));
+      querySnapshot.forEach((docSnap) => {
+        const li = document.createElement("li");
+        li.textContent = docSnap.id;
+        
+        const status = docSnap.data().status || 'inativo';
+        const statusClass = status === 'ativo' ? 'ativo' : 'inativo';
+        const statusLabel = document.createElement("span");
+        statusLabel.classList.add("status", statusClass);
+        statusLabel.textContent = status === 'ativo' ? 'Ativo' : 'Inativo';
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Alterar Status";
+        editBtn.onclick = async () => {
+          const newStatus = status === 'ativo' ? 'inativo' : 'ativo';
+          await updateDoc(doc(db, "autorizados", docSnap.id), { status: newStatus });
+          carregarEmails();
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Excluir";
+        delBtn.onclick = async () => {
+          await deleteDoc(doc(db, "autorizados", docSnap.id));
+          carregarEmails();
+        };
+
+        li.appendChild(statusLabel);
+        li.appendChild(editBtn);
+        li.appendChild(delBtn);
+        emailList.appendChild(li);
+      });
+    }
+
+    // Função de busca
+    searchInput.addEventListener("input", async (e) => {
+      const queryText = e.target.value.toLowerCase();
+      const querySnapshot = await getDocs(collection(db, "autorizados"));
+      const filteredEmails = querySnapshot.docs.filter(docSnap => {
+        return docSnap.id.toLowerCase().includes(queryText);
+      });
+
+      emailList.innerHTML = "";
+      filteredEmails.forEach((docSnap) => {
+        const li = document.createElement("li");
+        li.textContent = docSnap.id;
+        
+        const status = docSnap.data().status || 'inativo';
+        const statusClass = status === 'ativo' ? 'ativo' : 'inativo';
+        const statusLabel = document.createElement("span");
+        statusLabel.classList.add("status", statusClass);
+        statusLabel.textContent = status === 'ativo' ? 'Ativo' : 'Inativo';
+
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "Alterar Status";
+        editBtn.onclick = async () => {
+          const newStatus = status === 'ativo' ? 'inativo' : 'ativo';
+          await updateDoc(doc(db, "autorizados", docSnap.id), { status: newStatus });
+          carregarEmails();
+        };
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Excluir";
+        delBtn.onclick = async () => {
+          await deleteDoc(doc(db, "autorizados", docSnap.id));
+          carregarEmails();
+        };
+
+        li.appendChild(statusLabel);
+        li.appendChild(editBtn);
+        li.appendChild(delBtn);
+        emailList.appendChild(li);
+      });
+    });
+
+    // Adicionar novo e-mail
+    addEmailForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const email = emailInput.value.trim();
+      if (email) {
+        await setDoc(doc(db, "autorizados", email), { autorizado: true, status: 'inativo' });
+        emailInput.value = "";
+        carregarEmails();
+      }
+    });
 
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        if (cred.user.uid === ADMIN_UID) {
-          window.location.href = "admin-painel.html";
-        } else {
-          errorMsg.textContent = "Acesso negado: usuário não autorizado.";
-        }
-      } catch (error) {
-        errorMsg.textContent = "Erro ao fazer login: " + error.message;
+    // Sair
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "admin-login.html";
+    });
+
+    // Verificar autenticação
+    onAuthStateChanged(auth, (user) => {
+      if (!user || user.uid !== ADMIN_UID) {
+        window.location.href = "admin-login.html";
+      } else {
+        carregarEmails();
       }
     });
   </script>
