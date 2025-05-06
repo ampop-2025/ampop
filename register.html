@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registrar Usuário</title>
+  <style>
+    body {
+      background: #f5f5f5;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    h2 {
+      color: #007BFF;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #007BFF;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .message {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.95rem;
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Registrar Conta</h2>
+    <input type="email" id="email" placeholder="Seu e-mail autorizado" required />
+    <input type="password" id="password" placeholder="Senha" required />
+    <button onclick="registrar()">Registrar</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { firebaseConfig } from "./firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const message = document.getElementById("message");
+
+    async function registrar() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        message.textContent = "Preencha todos os campos.";
+        message.className = "message error";
+        return;
+      }
+
+      // Verifica se o e-mail está autorizado e ativo
+      const q = query(collection(db, "autorizados"), where("email", "==", email), where("ativo", "==", true));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        message.textContent = "Este e-mail não está autorizado.";
+        message.className = "message error";
+        return;
+      }
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        message.textContent = "Usuário cadastrado com sucesso! Redirecionando...";
+        message.className = "message";
+
+        setTimeout(() => {
+          window.location.href = "login.html";
+        }, 2000);
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = "message error";
+      }
+    }
+
+    window.registrar = registrar;
+  </script>
+</body>
+</html>
