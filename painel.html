@@ -87,7 +87,7 @@
 </head>
 <body>
   <header>
-    <div class="user-info" id="userInfo"></div>
+    <div class="user-info" id="userInfo">Carregando...</div>
     <button class="logout-btn" onclick="logout()">Sair</button>
   </header>
 
@@ -116,19 +116,27 @@
     const db = getFirestore(app);
     const message = document.getElementById("message");
 
-    // Exibir nome do usuário logado
-    function exibirNomeUsuario() {
-      const user = auth.currentUser;
+    // Verifica se o usuário está autenticado
+    auth.onAuthStateChanged(user => {
       if (user) {
-        document.getElementById("userInfo").textContent = `Bem-vindo, ${user.displayName || user.email}`;
+        exibirNomeUsuario(user);
+        listarDispositivos(user);  // Lista dispositivos assim que o usuário se autentica
+      } else {
+        window.location.href = 'user-login.html';  // Redireciona para o login se não estiver autenticado
       }
+    });
+
+    // Exibe o nome do usuário logado
+    function exibirNomeUsuario(user) {
+      const userInfoElement = document.getElementById("userInfo");
+      userInfoElement.textContent = `Bem-vindo, ${user.displayName || user.email}`;
     }
 
     // Função de logout
     function logout() {
       auth.signOut()
         .then(() => {
-          window.location.href = 'user-login.html'; // Redireciona para o login após sair
+          window.location.href = 'user-login.html'; // Redireciona para a página de login após logout
         })
         .catch((error) => {
           console.error("Erro ao sair:", error.message);
@@ -166,7 +174,7 @@
         message.className = "message";
 
         // Atualiza a lista de dispositivos
-        listarDispositivos();
+        listarDispositivos(user);
       } catch (error) {
         message.textContent = "Erro ao adicionar dispositivo: " + error.message;
         message.className = "message error";
@@ -185,10 +193,7 @@
     }
 
     // Função para listar dispositivos
-    async function listarDispositivos() {
-      const user = auth.currentUser;
-      if (!user) return;
-
+    async function listarDispositivos(user) {
       const q = query(collection(db, "devices"), where("uid", "==", user.uid));
       const querySnapshot = await getDocs(q);
 
@@ -202,12 +207,6 @@
         deviceList.appendChild(listItem);
       });
     }
-
-    // Carrega dispositivos ao iniciar a página
-    window.onload = () => {
-      listarDispositivos();
-      exibirNomeUsuario(); // Exibe o nome do usuário
-    };
   </script>
 </body>
 </html>
