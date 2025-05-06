@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - ampConnect</title>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #101820, #1d2c3d);
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      color: white;
+    }
+    .card {
+      background: #ffffff10;
+      padding: 2rem;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 1rem;
+      color: #FFA500;
+    }
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #FFA500;
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .message {
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+    .error {
+      color: #FF4F4F;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="E-mail" required />
+    <input type="password" id="password" placeholder="Senha" required />
+    <button onclick="login()">Entrar</button>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { firebaseConfig } from "./firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const message = document.getElementById("message");
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        message.textContent = "Preencha todos os campos.";
+        message.className = "message error";
+        return;
+      }
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        message.textContent = "Login bem-sucedido! Redirecionando...";
+        message.className = "message";
+
+        setTimeout(() => {
+          window.location.href = "painel.html";
+        }, 1500);
+      } catch (error) {
+        message.textContent = "Erro ao fazer login: " + error.message;
+        message.className = "message error";
+      }
+    }
+
+    window.login = login;
+  </script>
+</body>
+</html>
