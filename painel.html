@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel do Usuário</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+    }
+    header {
+      background: #007BFF;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .device-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    .device-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #007BFF;
+    }
+    button {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Painel do Usuário</h1>
+  </header>
+
+  <div class="container" id="device-list">
+    <p>Carregando dispositivos...</p>
+  </div>
+
+  <div class="container">
+    <button onclick="logout()">Sair</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { firebaseConfig } from "./firebase-config.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const deviceList = document.getElementById("device-list");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "user-login.html";
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "devices"), where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          deviceList.innerHTML = "<p>Nenhum dispositivo vinculado à sua conta.</p>";
+          return;
+        }
+
+        deviceList.innerHTML = "";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const card = document.createElement("div");
+          card.className = "device-card";
+          card.innerHTML = `
+            <div class="device-title">${data.nome || "Dispositivo sem nome"}</div>
+            <p>ID: ${doc.id}</p>
+            <p>Status: ${data.status || "Desconhecido"}</p>
+          `;
+          deviceList.appendChild(card);
+        });
+      } catch (e) {
+        deviceList.innerHTML = "<p>Erro ao carregar dispositivos.</p>";
+      }
+    });
+
+    function logout() {
+      signOut(auth).then(() => {
+        window.location.href = "user-login.html";
+      });
+    }
+  </script>
+</body>
+</html>
