@@ -25,22 +25,29 @@
       font-weight: bold;
       margin-top: 1rem;
     }
-    ul {
-      list-style: none;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    li {
-      margin: 0.5rem 0;
-      background: #fff;
+    input[type="text"], input[type="email"] {
       padding: 0.5rem;
-      border-radius: 5px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      margin-bottom: 1rem;
       width: 100%;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      margin-top: 2rem;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 0.8rem;
+      text-align: left;
+      border: 1px solid #ddd;
+    }
+    th {
+      background-color: #007BFF;
+      color: #fff;
+    }
+    td {
+      background-color: #fff;
     }
     .status {
       padding: 0.25rem 0.5rem;
@@ -55,17 +62,6 @@
       background-color: #dc3545;
       color: #fff;
     }
-    input[type="text"] {
-      padding: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .actions {
-      display: flex;
-      gap: 10px;
-    }
     .actions button {
       padding: 0.25rem 0.5rem;
       background: #007BFF;
@@ -73,6 +69,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      margin: 0 5px;
     }
   </style>
 </head>
@@ -82,7 +79,17 @@
   <!-- Filtro de E-mails -->
   <input type="text" id="searchInput" placeholder="Buscar e-mail" />
 
-  <ul id="emailList"></ul>
+  <!-- Tabela de E-mails -->
+  <table id="emailTable">
+    <thead>
+      <tr>
+        <th>E-mail</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody id="emailList"></tbody>
+  </table>
 
   <form id="addEmailForm">
     <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
@@ -111,18 +118,27 @@
       emailList.innerHTML = "";
       const querySnapshot = await getDocs(collection(db, "autorizados"));
       querySnapshot.forEach((docSnap) => {
-        const li = document.createElement("li");
-        li.textContent = docSnap.id;
+        const tr = document.createElement("tr");
         
+        // Nome do e-mail
+        const tdEmail = document.createElement("td");
+        tdEmail.textContent = docSnap.id;
+
+        // Status
+        const tdStatus = document.createElement("td");
         const status = docSnap.data().status || 'inativo';
         const statusClass = status === 'ativo' ? 'ativo' : 'inativo';
         const statusLabel = document.createElement("span");
         statusLabel.classList.add("status", statusClass);
         statusLabel.textContent = status === 'ativo' ? 'Ativo' : 'Inativo';
+        tdStatus.appendChild(statusLabel);
 
+        // Ações
+        const tdActions = document.createElement("td");
         const actionsDiv = document.createElement("div");
         actionsDiv.classList.add("actions");
 
+        // Botão de Alterar Status
         const editBtn = document.createElement("button");
         editBtn.textContent = "Alterar Status";
         editBtn.onclick = async () => {
@@ -131,6 +147,7 @@
           carregarEmails();  // Recarrega os e-mails após a alteração do status
         };
 
+        // Botão de Excluir
         const delBtn = document.createElement("button");
         delBtn.textContent = "Excluir";
         delBtn.onclick = async () => {
@@ -140,10 +157,12 @@
 
         actionsDiv.appendChild(editBtn);
         actionsDiv.appendChild(delBtn);
+        tdActions.appendChild(actionsDiv);
 
-        li.appendChild(statusLabel);
-        li.appendChild(actionsDiv);
-        emailList.appendChild(li);
+        tr.appendChild(tdEmail);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdActions);
+        emailList.appendChild(tr);
       });
     }
 
@@ -157,18 +176,27 @@
 
       emailList.innerHTML = "";
       filteredEmails.forEach((docSnap) => {
-        const li = document.createElement("li");
-        li.textContent = docSnap.id;
+        const tr = document.createElement("tr");
         
+        // Nome do e-mail
+        const tdEmail = document.createElement("td");
+        tdEmail.textContent = docSnap.id;
+
+        // Status
+        const tdStatus = document.createElement("td");
         const status = docSnap.data().status || 'inativo';
         const statusClass = status === 'ativo' ? 'ativo' : 'inativo';
         const statusLabel = document.createElement("span");
         statusLabel.classList.add("status", statusClass);
         statusLabel.textContent = status === 'ativo' ? 'Ativo' : 'Inativo';
+        tdStatus.appendChild(statusLabel);
 
+        // Ações
+        const tdActions = document.createElement("td");
         const actionsDiv = document.createElement("div");
         actionsDiv.classList.add("actions");
 
+        // Botão de Alterar Status
         const editBtn = document.createElement("button");
         editBtn.textContent = "Alterar Status";
         editBtn.onclick = async () => {
@@ -177,6 +205,7 @@
           carregarEmails();  // Recarrega os e-mails após a alteração do status
         };
 
+        // Botão de Excluir
         const delBtn = document.createElement("button");
         delBtn.textContent = "Excluir";
         delBtn.onclick = async () => {
@@ -186,10 +215,12 @@
 
         actionsDiv.appendChild(editBtn);
         actionsDiv.appendChild(delBtn);
+        tdActions.appendChild(actionsDiv);
 
-        li.appendChild(statusLabel);
-        li.appendChild(actionsDiv);
-        emailList.appendChild(li);
+        tr.appendChild(tdEmail);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdActions);
+        emailList.appendChild(tr);
       });
     });
 
