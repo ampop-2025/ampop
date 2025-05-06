@@ -86,6 +86,9 @@
       }
 
       try {
+        await signOut(auth); // Garante que não há usuário logado antes da consulta
+
+        // Verifica se o e-mail está autorizado e ativo
         const q = query(collection(db, "autorizados"), where("email", "==", email), where("ativo", "==", true));
         const querySnapshot = await getDocs(q);
 
@@ -95,8 +98,9 @@
           return;
         }
 
+        // Cria o usuário
         await createUserWithEmailAndPassword(auth, email, password);
-        await signOut(auth);  // <-- ESSENCIAL PARA DESLOGAR AUTOMATICAMENTE
+        await signOut(auth); // Desloga o novo usuário para limpar o estado
 
         message.textContent = "Usuário cadastrado com sucesso! Redirecionando...";
         message.className = "message";
