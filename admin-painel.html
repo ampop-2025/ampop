@@ -133,18 +133,25 @@
       });
     }
 
-    addEmailForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = emailInput.value.trim();
-      if (email) {
-        await setDoc(doc(db, "autorizados", email), {
-          autorizado: true,
-          ativo: true
-        });
-        emailInput.value = "";
-        carregarEmails();
-      }
-    });
+addEmailForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = emailInput.value.trim();
+
+  if (email) {
+    try {
+      await setDoc(doc(db, "autorizados", email), {
+        autorizado: true,
+        ativo: true
+      });
+      console.log("Email adicionado com sucesso:", email);
+      emailInput.value = "";
+      carregarEmails();
+    } catch (error) {
+      console.error("Erro ao adicionar e-mail:", error);
+      alert("Erro ao adicionar e-mail. Verifique se as permissões do Firestore estão corretas.");
+    }
+  }
+});
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await signOut(auth);
