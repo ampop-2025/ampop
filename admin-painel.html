@@ -6,76 +6,66 @@
   <title>Painel Administrativo</title>
   <style>
     body {
+      background: linear-gradient(to bottom, #e0f2ff, #f8fbff);
+      font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom, #e3f2fd, #bbdefb);
-      color: #0d47a1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       padding: 2rem;
+      color: #003366;
     }
     h2 {
-      margin-bottom: 1.5rem;
+      text-align: center;
+      margin-bottom: 2rem;
     }
     .card {
       background: white;
       border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       padding: 1rem;
-      margin: 0.5rem;
-      width: 100%;
-      max-width: 500px;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       display: flex;
       justify-content: space-between;
       align-items: center;
-    }
-    .info {
-      display: flex;
-      flex-direction: column;
     }
     .email {
       font-weight: bold;
     }
     .status {
       font-size: 0.9rem;
-      color: #555;
-    }
-    .actions {
-      display: flex;
-      gap: 0.5rem;
+      margin-top: 4px;
+      color: #666;
     }
     button {
-      background: #0d47a1;
+      background: #007BFF;
       color: white;
       border: none;
       padding: 0.4rem 0.8rem;
       border-radius: 6px;
       cursor: pointer;
+      margin-left: 0.5rem;
+      font-size: 0.9rem;
     }
     button:hover {
-      opacity: 0.9;
+      background: #0056b3;
     }
-    form {
-      margin-top: 2rem;
+    #addEmailForm {
       display: flex;
       gap: 0.5rem;
-      align-items: center;
+      margin-top: 2rem;
     }
-    input[type="email"] {
+    #emailInput {
+      flex: 1;
       padding: 0.5rem;
-      border: 1px solid #90caf9;
+      border: 1px solid #ccc;
       border-radius: 6px;
-      width: 250px;
     }
     #logoutBtn {
+      background: #ff4444;
       margin-top: 2rem;
-      background: #ef5350;
     }
   </style>
 </head>
 <body>
-  <h2>Painel Administrativo - Usuários Autorizados</h2>
+  <h2>Usuários Autorizados</h2>
   <div id="emailList"></div>
 
   <form id="addEmailForm">
@@ -104,50 +94,42 @@
       const querySnapshot = await getDocs(collection(db, "autorizados"));
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        const isActive = data.ativo !== false; // padrão: ativo se não definido
+        const email = docSnap.id;
+        const ativo = data.ativo ?? true;
 
-        const div = document.createElement("div");
-        div.className = "card";
+        const card = document.createElement("div");
+        card.className = "card";
 
-        const info = document.createElement("div");
-        info.className = "info";
+        const infoDiv = document.createElement("div");
+        infoDiv.innerHTML = `
+          <div class="email">${email}</div>
+          <div class="status">Status: ${ativo ? "Ativo" : "Inativo"}</div>
+        `;
 
-        const email = document.createElement("div");
-        email.className = "email";
-        email.textContent = docSnap.id;
-
-        const status = document.createElement("div");
-        status.className = "status";
-        status.textContent = isActive ? "Status: Ativo" : "Status: Inativo";
-
-        info.appendChild(email);
-        info.appendChild(status);
-
-        const actions = document.createElement("div");
-        actions.className = "actions";
+        const controls = document.createElement("div");
 
         const toggleBtn = document.createElement("button");
-        toggleBtn.textContent = isActive ? "Desativar" : "Ativar";
+        toggleBtn.textContent = ativo ? "Desativar" : "Ativar";
         toggleBtn.onclick = async () => {
-          await updateDoc(doc(db, "autorizados", docSnap.id), { ativo: !isActive });
+          await updateDoc(doc(db, "autorizados", email), { ativo: !ativo });
           carregarEmails();
         };
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "Excluir";
+        delBtn.style.background = "#cc0000";
         delBtn.onclick = async () => {
-          if (confirm("Tem certeza que deseja excluir este email?")) {
-            await deleteDoc(doc(db, "autorizados", docSnap.id));
-            carregarEmails();
-          }
+          await deleteDoc(doc(db, "autorizados", email));
+          carregarEmails();
         };
 
-        actions.appendChild(toggleBtn);
-        actions.appendChild(delBtn);
+        controls.appendChild(toggleBtn);
+        controls.appendChild(delBtn);
 
-        div.appendChild(info);
-        div.appendChild(actions);
-        emailList.appendChild(div);
+        card.appendChild(infoDiv);
+        card.appendChild(controls);
+
+        emailList.appendChild(card);
       });
     }
 
@@ -155,7 +137,10 @@
       e.preventDefault();
       const email = emailInput.value.trim();
       if (email) {
-        await setDoc(doc(db, "autorizados", email), { autorizado: true, ativo: true });
+        await setDoc(doc(db, "autorizados", email), {
+          autorizado: true,
+          ativo: true
+        });
         emailInput.value = "";
         carregarEmails();
       }
