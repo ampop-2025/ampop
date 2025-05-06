@@ -66,7 +66,10 @@
 </head>
 <body>
   <h2>Usuários Autorizados</h2>
-  <div id="emailList"></div>
+  <!-- Campo de busca -->
+  <input type="text" id="searchInput" placeholder="Buscar e-mail..." style="padding: 0.5rem; width: 100%; margin-bottom: 1rem; border-radius: 8px; border: none;" />
+
+  <ul id="emailList"></ul>
 
   <form id="addEmailForm">
     <input type="email" id="emailInput" placeholder="Novo email autorizado" required />
@@ -78,7 +81,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, doc, setDoc, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig, ADMIN_UID } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -88,70 +91,70 @@
     const emailList = document.getElementById("emailList");
     const addEmailForm = document.getElementById("addEmailForm");
     const emailInput = document.getElementById("emailInput");
+    const searchInput = document.getElementById("searchInput");
+
+    let allEmails = [];
 
     async function carregarEmails() {
       emailList.innerHTML = "";
       const querySnapshot = await getDocs(collection(db, "autorizados"));
+      allEmails = [];
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const email = docSnap.id;
-        const ativo = data.ativo ?? true;
-
-        const card = document.createElement("div");
-        card.className = "card";
-
-        const infoDiv = document.createElement("div");
-        infoDiv.innerHTML = `
-          <div class="email">${email}</div>
-          <div class="status">Status: ${ativo ? "Ativo" : "Inativo"}</div>
-        `;
-
-        const controls = document.createElement("div");
-
-        const toggleBtn = document.createElement("button");
-        toggleBtn.textContent = ativo ? "Desativar" : "Ativar";
-        toggleBtn.onclick = async () => {
-          await updateDoc(doc(db, "autorizados", email), { ativo: !ativo });
-          carregarEmails();
-        };
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Excluir";
-        delBtn.style.background = "#cc0000";
-        delBtn.onclick = async () => {
-          await deleteDoc(doc(db, "autorizados", email));
-          carregarEmails();
-        };
-
-        controls.appendChild(toggleBtn);
-        controls.appendChild(delBtn);
-
-        card.appendChild(infoDiv);
-        card.appendChild(controls);
-
-        emailList.appendChild(card);
+        allEmails.push(docSnap.id);
       });
+      exibirEmailsFiltrados();
     }
 
-addEmailForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const email = emailInput.value.trim();
+    function exibirEmailsFiltrados() {
+      const filtro = searchInput.value.toLowerCase();
+      emailList.innerHTML = "";
+      allEmails
+        .filter(email => email.toLowerCase().includes(filtro))
+        .forEach(email => {
+          const li = document.createElement("li");
+          li.textContent = email;
 
-  if (email) {
-    try {
-      await setDoc(doc(db, "autorizados", email), {
-        autorizado: true,
-        ativo: true
-      });
-      console.log("Email adicionado com sucesso:", email);
-      emailInput.value = "";
-      carregarEmails();
-    } catch (error) {
-      console.error("Erro ao adicionar e-mail:", error);
-      alert("Erro ao adicionar e-mail. Verifique se as permissões do Firestore estão corretas.");
+          // Botão Editar
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "Editar";
+          editBtn.style.marginLeft = "1rem";
+          editBtn.onclick = () => editarEmail(email);
+
+          // Botão Excluir
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Excluir";
+          delBtn.style.marginLeft = "0.5rem";
+          delBtn.onclick = async () => {
+            await deleteDoc(doc(db, "autorizados", email));
+            carregarEmails();
+          };
+
+          li.appendChild(editBtn);
+          li.appendChild(delBtn);
+          emailList.appendChild(li);
+        });
     }
-  }
-});
+
+    async function editarEmail(emailAntigo) {
+      const novoEmail = prompt("Digite o novo e-mail:", emailAntigo);
+      if (novoEmail && novoEmail !== emailAntigo) {
+        await setDoc(doc(db, "autorizados", novoEmail), { autorizado: true });
+        await deleteDoc(doc(db, "autorizados", emailAntigo));
+        carregarEmails();
+      }
+    }
+
+    addEmailForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+      if (email) {
+        await setDoc(doc(db, "autorizados", email), { autorizado: true });
+        emailInput.value = "";
+        carregarEmails();
+      }
+    });
+
+    searchInput.addEventListener("input", exibirEmailsFiltrados);
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await signOut(auth);
@@ -167,4 +170,3 @@ addEmailForm.addEventListener("submit", async (e) => {
     });
   </script>
 </body>
-</html>
