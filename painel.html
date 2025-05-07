@@ -2,94 +2,91 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ampConnect - Painel</title>
+  <title>painel | ampConnect</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: #fff;
+      font-family: 'Inter', sans-serif;
       margin: 0;
       padding: 0;
+      background: linear-gradient(to right, #1a1a2e, #16213e);
+      color: white;
     }
     header {
-      background-color: #1c1c1c;
-      padding: 1rem 2rem;
+      background-color: #0f3460;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 1rem 2rem;
     }
-    .user-info {
-      font-size: 1rem;
-      font-weight: bold;
+    header h1 {
+      margin: 0;
     }
-    .logout-btn {
-      background-color: #ff6600;
-      border: none;
-      padding: 0.5rem 1rem;
-      color: white;
-      cursor: pointer;
-      border-radius: 5px;
+    header .user-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
     }
     .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: #fff;
-      color: #000;
-      border-radius: 10px;
       padding: 2rem;
     }
+    .card {
+      background: white;
+      color: black;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+    }
     .form-group {
-      margin-bottom: 1rem;
+      margin-top: 1rem;
     }
-    .form-group label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 0.3rem;
-    }
-    .form-group input {
-      width: 100%;
+    input[type="text"] {
       padding: 0.5rem;
-      font-size: 1rem;
-    }
-    .btn {
-      background-color: #ff6600;
-      color: white;
-      padding: 0.7rem 1.5rem;
+      border-radius: 5px;
       border: none;
+      width: 100%;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin-top: 1rem;
+      border: none;
+      background-color: #f96d00;
+      color: white;
       border-radius: 5px;
       cursor: pointer;
-      font-weight: bold;
     }
-    #status {
-      margin-top: 1rem;
-      font-weight: bold;
+    button:hover {
+      background-color: #d85b00;
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="user-info" id="user-name">Usuário</div>
-    <button class="logout-btn" onclick="logout()">Sair</button>
+    <h1>ampConnect</h1>
+    <div class="user-info">
+      <span id="user-name">Usuário</span>
+      <button id="logout-btn">Sair</button>
+    </div>
   </header>
 
   <div class="container">
-    <h2>Registrar Dispositivo</h2>
-    <div class="form-group">
-      <label for="nomeDispositivo">Nome do Dispositivo</label>
-      <input type="text" id="nomeDispositivo" placeholder="Ex: Sala, Escritório, etc">
+    <h2>Meus Dispositivos</h2>
+
+    <div class="card">
+      <label for="device-name">Nome do Dispositivo:</label>
+      <input type="text" id="device-name" placeholder="Ex: Sala, Escritório..." />
+      <button id="add-device-btn">Adicionar Dispositivo</button>
+      <p id="status-msg"></p>
     </div>
-    <button class="btn" onclick="adicionarDispositivo()">Adicionar Dispositivo</button>
-    <div id="status"></div>
+
+    <div id="devices-list" class="card"></div>
   </div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-
   <script>
-    // Configuração do Firebase
+    // Configuração Firebase
     const firebaseConfig = {
       apiKey: "SUA_API_KEY",
       authDomain: "SEU_AUTH_DOMAIN",
@@ -103,67 +100,74 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUser;
+    let currentUser = null;
 
     auth.onAuthStateChanged(user => {
-  if (user) {
-    currentUser = user;
-    document.getElementById('user-name').textContent = user.email;
-  } else {
-    // Aguarda 500ms antes de redirecionar para evitar falso negativo
-    setTimeout(() => {
-      if (!auth.currentUser) {
+      if (user) {
+        currentUser = user;
+        document.getElementById("user-name").textContent = user.email;
+        carregarDispositivos();
+      } else {
         window.location.href = "user-login.html";
       }
-    }, 500);
-  }
-});
-    
-    function logout() {
+    });
+
+    // Logout
+    document.getElementById("logout-btn").addEventListener("click", () => {
       auth.signOut().then(() => {
         window.location.href = "user-login.html";
       }).catch(error => {
         alert("Erro ao sair: " + error.message);
       });
-    }
+    });
 
-    function gerarDeviceId() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let id = '';
-      for (let i = 0; i < 7; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      return 'esp32-c3-' + id;
-    }
-
-    function adicionarDispositivo() {
-      const nome = document.getElementById('nomeDispositivo').value.trim();
-      const statusDiv = document.getElementById('status');
+    // Adicionar Dispositivo
+    document.getElementById("add-device-btn").addEventListener("click", async () => {
+      const nome = document.getElementById("device-name").value.trim();
+      const statusMsg = document.getElementById("status-msg");
 
       if (!nome) {
-        statusDiv.textContent = "Digite um nome válido para o dispositivo.";
-        statusDiv.style.color = 'red';
+        statusMsg.textContent = "Insira um nome para o dispositivo.";
         return;
       }
 
-      const deviceId = gerarDeviceId();
+      const deviceId = "esp32-c3-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-      db.collection("devices").doc(deviceId).set({
-        uid: currentUser.uid,
-        nome: nome,
-        deviceId: deviceId,
-        status: "desconectado"
-      })
-      .then(() => {
-        statusDiv.textContent = `Dispositivo ${deviceId} adicionado com sucesso.`;
-        statusDiv.style.color = 'green';
-        document.getElementById('nomeDispositivo').value = '';
-      })
-      .catch((error) => {
-        console.error("Erro ao adicionar dispositivo:", error);
-        statusDiv.textContent = "Erro ao adicionar dispositivo.";
-        statusDiv.style.color = 'red';
-      });
+      try {
+        await db.collection("devices").doc(deviceId).set({
+          uid: currentUser.uid,
+          nome: nome,
+          deviceId: deviceId,
+          status: "desconectado"
+        });
+        statusMsg.textContent = "Dispositivo adicionado com sucesso!";
+        document.getElementById("device-name").value = "";
+        carregarDispositivos();
+      } catch (error) {
+        statusMsg.textContent = "Erro ao adicionar: " + error.message;
+      }
+    });
+
+    // Carregar dispositivos do usuário
+    async function carregarDispositivos() {
+      const lista = document.getElementById("devices-list");
+      lista.innerHTML = "<strong>Carregando dispositivos...</strong>";
+      try {
+        const snapshot = await db.collection("devices").where("uid", "==", currentUser.uid).get();
+        if (snapshot.empty) {
+          lista.innerHTML = "Nenhum dispositivo encontrado.";
+          return;
+        }
+
+        let html = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          html += `<p><strong>${d.nome}</strong> (${d.deviceId}) - Status: ${d.status}</p>`;
+        });
+        lista.innerHTML = html;
+      } catch (error) {
+        lista.innerHTML = "Erro ao carregar dispositivos.";
+      }
     }
   </script>
 </body>
