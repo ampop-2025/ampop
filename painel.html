@@ -9,96 +9,80 @@
       background: #f0f4f8;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 2rem;
+      padding: 0;
     }
     header {
+      background: #007BFF;
+      color: white;
+      padding: 1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 2rem;
+    }
+    header span {
+      font-weight: bold;
+    }
+    .container {
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
     }
     h2 {
       color: #007BFF;
-    }
-    button {
-      padding: 0.5rem 1rem;
-      background: #007BFF;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    #logout-msg {
-      margin-top: 1rem;
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      color: #007BFF;
-      font-weight: bold;
-    }
-    #logout-msg.show {
-      opacity: 1;
-    }
-    #device-form {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    #device-form input {
-      flex: 1;
-      padding: 0.5rem;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .device-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
+      margin-bottom: 1rem;
     }
     .device-card {
-      background: #fff;
-      border-radius: 10px;
+      background: white;
       padding: 1rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      position: relative;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
     }
-    .device-card h3 {
-      margin: 0 0 0.5rem;
-    }
-    .status {
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-    }
-    .status.conectado {
-      color: green;
-    }
-    .status.desconectado {
-      color: red;
+    .device-card input {
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
     .device-card button {
-      background: #dc3545;
-      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .add-device {
+      margin-top: 2rem;
+    }
+    .add-device input {
+      padding: 0.5rem;
+      width: calc(100% - 130px);
+      margin-right: 10px;
     }
   </style>
 </head>
 <body>
   <header>
-    <h2 id="user-name">Painel do Usuário</h2>
+    <span id="user-name">Usuário</span>
     <button id="logout-btn">Sair</button>
   </header>
-  <div id="logout-msg">Saindo...</div>
+  <div class="container">
+    <h2>Seus Dispositivos</h2>
+    <div id="devices"></div>
 
-  <form id="device-form">
-    <input type="text" id="device-name" placeholder="Nome do dispositivo" required />
-    <button type="submit">Adicionar Dispositivo</button>
-  </form>
-
-  <div class="device-list" id="device-list"></div>
+    <div class="add-device">
+      <input type="text" id="device-name" placeholder="Nome do dispositivo" />
+      <button id="add-device-btn">Adicionar</button>
+    </div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, doc, getDocs, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
@@ -106,66 +90,71 @@
     const db = getFirestore(app);
 
     const logoutBtn = document.getElementById("logout-btn");
-    const logoutMsg = document.getElementById("logout-msg");
-    const userName = document.getElementById("user-name");
-    const deviceForm = document.getElementById("device-form");
-    const deviceList = document.getElementById("device-list");
+    const userNameDisplay = document.getElementById("user-name");
+    const devicesContainer = document.getElementById("devices");
+    const deviceNameInput = document.getElementById("device-name");
+    const addDeviceBtn = document.getElementById("add-device-btn");
 
-    let currentUser = null;
+    let currentUser;
 
     onAuthStateChanged(auth, async user => {
-      if (!user) return window.location.href = "user-login.html";
+      if (!user) {
+        window.location.href = "user-login.html";
+        return;
+      }
       currentUser = user;
-      userName.textContent = `Olá, ${user.email}`;
-      loadDevices();
+      userNameDisplay.textContent = user.email;
+      await loadDevices();
     });
 
     logoutBtn.addEventListener("click", () => {
-      logoutMsg.classList.add("show");
       signOut(auth).then(() => {
-        setTimeout(() => window.location.href = "user-login.html", 1500);
-      }).catch(error => {
-        logoutMsg.textContent = "Erro ao sair: " + error.message;
+        window.location.href = "user-login.html";
       });
-    });
-
-    deviceForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const name = document.getElementById("device-name").value.trim();
-      if (!name || !currentUser) return;
-      const code = "esp32-c3-" + Math.random().toString(36).substring(2, 9);
-      await addDoc(collection(db, "devices"), {
-        uid: currentUser.uid,
-        nome: name,
-        deviceId: code,
-        status: "desconectado"
-      });
-      deviceForm.reset();
-      loadDevices();
     });
 
     async function loadDevices() {
-      deviceList.innerHTML = "";
+      devicesContainer.innerHTML = "";
       const q = query(collection(db, "devices"), where("uid", "==", currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach(docSnap => {
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        const div = document.createElement("div");
-        div.className = "device-card";
-        div.innerHTML = `
-          <h3>${data.nome}</h3>
-          <div class="status ${data.status}">Status: ${data.status}</div>
-          <div>ID: ${data.deviceId}</div>
-          <button onclick="deleteDevice('${docSnap.id}')">Excluir</button>
+        const deviceDiv = document.createElement("div");
+        deviceDiv.className = "device-card";
+        deviceDiv.innerHTML = `
+          <label>ID: ${data.deviceId}</label>
+          <input type="text" value="${data.nome}" id="name-${docSnap.id}" />
+          <button onclick="updateDeviceName('${docSnap.id}')">Salvar Nome</button>
         `;
-        deviceList.appendChild(div);
+        devicesContainer.appendChild(deviceDiv);
       });
     }
 
-    window.deleteDevice = async (id) => {
-      await deleteDoc(doc(db, "devices", id));
-      loadDevices();
+    window.updateDeviceName = async (id) => {
+      const input = document.getElementById(`name-${id}`);
+      const nome = input.value.trim();
+      if (nome) {
+        await updateDoc(doc(db, "devices", id), { nome });
+        alert("Nome atualizado com sucesso.");
+      }
     }
+
+    addDeviceBtn.addEventListener("click", async () => {
+      const nome = deviceNameInput.value.trim();
+      if (!nome) return alert("Digite o nome do dispositivo.");
+
+      const deviceId = `esp32-c3-${Date.now().toString(36).toUpperCase()}`;
+      await addDoc(collection(db, "devices"), {
+        uid: currentUser.uid,
+        nome,
+        deviceId,
+        status: "desconectado"
+      });
+
+      deviceNameInput.value = "";
+      await loadDevices();
+    });
   </script>
 </body>
 </html>
