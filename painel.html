@@ -113,12 +113,15 @@
 
 onAuthStateChanged(auth, async user => {
   if (!user) {
+    alert("Usuário não autenticado");
     window.location.href = "user-login.html";
     return;
   }
 
   try {
     const email = user.email.toLowerCase();
+    console.log("Verificando autorização de:", email);
+    
     const docRef = doc(db, "autorizados", email);
     const docSnap = await getDoc(docRef);
 
@@ -132,7 +135,7 @@ onAuthStateChanged(auth, async user => {
     const autorizado = docSnap.data();
 
     if (!autorizado.ativo) {
-      alert("Seu acesso foi desativado pelo administrador.");
+      alert("Seu acesso foi desativado.");
       await signOut(auth);
       window.location.href = "user-login.html";
       return;
@@ -144,12 +147,13 @@ onAuthStateChanged(auth, async user => {
     loadDevices();
 
   } catch (error) {
-    console.error("Erro ao verificar autorização:", error);
-    alert("Erro ao verificar autorização. Tente novamente.");
+    alert("Erro ao verificar autorização: " + error.message);
+    console.error("Erro ao buscar documento:", error);
     await signOut(auth);
     window.location.href = "user-login.html";
   }
 });
+
 
     logoutBtn.addEventListener("click", async () => {
       await signOut(auth);
