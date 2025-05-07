@@ -2,119 +2,107 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Registrar Usuário</title>
-  <style>
-    body {
-      background: #f5f5f5;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .card {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-    h2 {
-      color: #007BFF;
-      margin-bottom: 1rem;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      background: #007BFF;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .message {
-      margin-top: 1rem;
-      text-align: center;
-      font-size: 0.95rem;
-      color: green;
-    }
-    .error {
-      color: red;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h2>Registrar Conta</h2>
-    <input type="email" id="email" placeholder="Seu e-mail autorizado" required />
-    <input type="password" id="password" placeholder="Senha" required />
-    <button onclick="registrar()">Registrar</button>
-    <div class="message" id="message"></div>
-  </div>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registrar Usuário - ampConnect</title>
   <script type="module">
+    import { firebaseConfig } from './firebase-config.js';
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-    import { firebaseConfig } from "./firebase-config.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const message = document.getElementById("message");
 
-    async function registrar() {
-      const email = document.getElementById("email").value.trim();
+    const form = document.getElementById("register-form");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      if (!email || !password) {
-        message.textContent = "Preencha todos os campos.";
-        message.className = "message error";
-        return;
-      }
-
       try {
-        await signOut(auth); // Garante que não há usuário logado antes da consulta
+        // Verifica se o e-mail está autorizado
+        const autorizadosRef = doc(db, "autorizados", email);
+        const autorizadoSnap = await getDoc(autorizadosRef);
 
-        // Verifica se o e-mail está autorizado e ativo
-        const q = query(collection(db, "autorizados"), where("email", "==", email), where("ativo", "==", true));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          message.textContent = "Este e-mail não está autorizado.";
-          message.className = "message error";
+        if (!autorizadoSnap.exists()) {
+          alert("Este e-mail não está autorizado para registro.");
           return;
         }
 
-        // Cria o usuário
-        await createUserWithEmailAndPassword(auth, email, password);
-        await signOut(auth); // Desloga o novo usuário para limpar o estado
+        // Cria o usuário no Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
 
-        message.textContent = "Usuário cadastrado com sucesso! Redirecionando...";
-        message.className = "message";
+        // Cria o documento do usuário no Firestore
+        await setDoc(doc(db, "users", uid), {
+          nome: name,
+          email: email,
+          criadoEm: serverTimestamp()
+        });
 
-        setTimeout(() => {
-          window.location.href = "user-login.html";
-        }, 2000);
+        alert("Conta criada com sucesso!");
+        window.location.href = "user-login.html";
+
       } catch (error) {
-        message.textContent = error.message;
-        message.className = "message error";
+        console.error(error);
+        alert("Erro ao registrar: " + error.message);
       }
-    }
-
-    window.registrar = registrar;
+    });
   </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #101922;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      background: #1f2937;
+      padding: 2rem;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      width: 300px;
+    }
+    input, button {
+      padding: 0.5rem;
+      border: none;
+      border-radius: 5px;
+    }
+    button {
+      background: #f97316;
+      color: white;
+      cursor: pointer;
+    }
+    h2 {
+      text-align: center;
+      color: #f97316;
+    }
+  </style>
+</head>
+<body>
+  <form id="register-form">
+    <h2>Registrar</h2>
+    <input type="text" id="name" placeholder="Nome" required />
+    <input type="email" id="email" placeholder="E-mail" required />
+    <input type="password" id="password" placeholder="Senha" required />
+    <button type="submit">Criar Conta</button>
+  </form>
 </body>
 </html>
