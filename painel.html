@@ -2,212 +2,107 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Dispositivos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Painel do Usuário</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
     }
-
-    .container {
-      width: 80%;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .card {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      text-align: center;
-      color: #007BFF;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      background: #007BFF;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .message {
-      margin-top: 1rem;
-      text-align: center;
-      font-size: 0.95rem;
-      color: green;
-    }
-
-    .error {
-      color: red;
-    }
-
-    /* Estilo para o cabeçalho */
     header {
       background: #007BFF;
       color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 1rem;
+      text-align: center;
     }
-
-    .user-info {
-      font-size: 1rem;
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      padding: 0 1rem;
     }
-
-    .logout-btn {
-      background: #d9534f;
-      padding: 0.5rem 1rem;
+    .device-card {
+      background: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 1rem;
+    }
+    .device-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #007BFF;
+    }
+    button {
+      background: #dc3545;
       color: white;
       border: none;
+      padding: 0.5rem 1rem;
       border-radius: 5px;
       cursor: pointer;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="user-info" id="userInfo">Carregando...</div>
-    <button class="logout-btn" onclick="logout()">Sair</button>
+    <h1>Painel do Usuário</h1>
   </header>
 
-  <div class="container">
-    <div class="card">
-      <h2>Adicionar Novo Dispositivo</h2>
-      <input type="text" id="deviceName" placeholder="Nome do dispositivo" required />
-      <button onclick="adicionarDispositivo()">Adicionar Dispositivo</button>
-      <div class="message" id="message"></div>
-    </div>
+  <div class="container" id="device-list">
+    <p>Carregando dispositivos...</p>
+  </div>
 
-    <div class="card">
-      <h2>Dispositivos Cadastrados</h2>
-      <ul id="deviceList"></ul>
-    </div>
+  <div class="container">
+    <button onclick="logout()">Sair</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const message = document.getElementById("message");
+    const deviceList = document.getElementById("device-list");
 
-    // Verifica se o usuário está autenticado
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        exibirNomeUsuario(user);
-        listarDispositivos(user);  // Lista dispositivos assim que o usuário se autentica
-      } else {
-        window.location.href = 'user-login.html';  // Redireciona para o login se não estiver autenticado
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "user-login.html";
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "devices"), where("uid", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+          deviceList.innerHTML = "<p>Nenhum dispositivo vinculado à sua conta.</p>";
+          return;
+        }
+
+        deviceList.innerHTML = "";
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const card = document.createElement("div");
+          card.className = "device-card";
+          card.innerHTML = `
+            <div class="device-title">${data.nome || "Dispositivo sem nome"}</div>
+            <p>ID: ${doc.id}</p>
+            <p>Status: ${data.status || "Desconhecido"}</p>
+          `;
+          deviceList.appendChild(card);
+        });
+      } catch (e) {
+        deviceList.innerHTML = "<p>Erro ao carregar dispositivos.</p>";
       }
     });
 
-    // Exibe o nome do usuário logado
-    function exibirNomeUsuario(user) {
-      const userInfoElement = document.getElementById("userInfo");
-      userInfoElement.textContent = `Bem-vindo, ${user.displayName || user.email}`;
-    }
-
-    // Função de logout
     function logout() {
-      auth.signOut()
-        .then(() => {
-          window.location.href = 'user-login.html'; // Redireciona para a página de login após logout
-        })
-        .catch((error) => {
-          console.error("Erro ao sair:", error.message);
-          message.textContent = "Erro ao tentar sair. Tente novamente.";
-          message.className = "message error";
-        });
-    }
-
-    // Função para adicionar dispositivo
-    async function adicionarDispositivo() {
-      const deviceName = document.getElementById("deviceName").value.trim();
-
-      if (!deviceName) {
-        message.textContent = "Por favor, forneça um nome para o dispositivo.";
-        message.className = "message error";
-        return;
-      }
-
-      const user = auth.currentUser;
-      if (!user) {
-        message.textContent = "Você precisa estar logado para adicionar um dispositivo.";
-        message.className = "message error";
-        return;
-      }
-
-      const deviceId = gerarDeviceId(); // Gera um ID único para o dispositivo
-      try {
-        // Adicionando o novo dispositivo no Firestore
-        await addDoc(collection(db, "devices"), {
-          uid: user.uid, // Associa o dispositivo ao UID do usuário
-          nome: deviceName,
-          deviceId: deviceId,
-          status: "desconectado", // O dispositivo começa desconectado
-        });
-
-        message.textContent = "Dispositivo adicionado com sucesso!";
-        message.className = "message";
-
-        // Atualiza a lista de dispositivos
-        listarDispositivos(user);
-      } catch (error) {
-        message.textContent = "Erro ao adicionar dispositivo: " + error.message;
-        message.className = "message error";
-        console.error("Erro ao adicionar dispositivo:", error);
-      }
-    }
-
-    // Função para gerar ID único do dispositivo
-    function gerarDeviceId() {
-      const prefixo = "esp32-c3-";
-      const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      let deviceId = prefixo;
-      for (let i = 0; i < 7; i++) {
-        deviceId += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
-      }
-      return deviceId;
-    }
-
-    // Função para listar dispositivos
-    async function listarDispositivos(user) {
-      const q = query(collection(db, "devices"), where("uid", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-
-      const deviceList = document.getElementById("deviceList");
-      deviceList.innerHTML = ""; // Limpa a lista antes de atualizar
-
-      querySnapshot.forEach((doc) => {
-        const device = doc.data();
-        const listItem = document.createElement("li");
-        listItem.textContent = `${device.nome} - ${device.deviceId} - Status: ${device.status}`;
-        deviceList.appendChild(listItem);
+      signOut(auth).then(() => {
+        window.location.href = "user-login.html";
       });
     }
   </script>
