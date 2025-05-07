@@ -106,14 +106,19 @@
     let currentUser;
 
     auth.onAuthStateChanged(user => {
-      if (user) {
-        currentUser = user;
-        document.getElementById('user-name').textContent = user.email;
-      } else {
+  if (user) {
+    currentUser = user;
+    document.getElementById('user-name').textContent = user.email;
+  } else {
+    // Aguarda 500ms antes de redirecionar para evitar falso negativo
+    setTimeout(() => {
+      if (!auth.currentUser) {
         window.location.href = "user-login.html";
       }
-    });
-
+    }, 500);
+  }
+});
+    
     function logout() {
       auth.signOut().then(() => {
         window.location.href = "user-login.html";
