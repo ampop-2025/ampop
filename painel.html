@@ -2,212 +2,162 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Dispositivos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ampConnect - Painel</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
       margin: 0;
       padding: 0;
     }
-
-    .container {
-      width: 80%;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .card {
-      background: #fff;
-      padding: 2rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
-    }
-
-    h2 {
-      text-align: center;
-      color: #007BFF;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-bottom: 1rem;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      background: #007BFF;
-      border: none;
-      border-radius: 5px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .message {
-      margin-top: 1rem;
-      text-align: center;
-      font-size: 0.95rem;
-      color: green;
-    }
-
-    .error {
-      color: red;
-    }
-
-    /* Estilo para o cabeçalho */
     header {
-      background: #007BFF;
-      color: white;
-      padding: 10px 20px;
+      background-color: #1c1c1c;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-
     .user-info {
       font-size: 1rem;
+      font-weight: bold;
     }
-
     .logout-btn {
-      background: #d9534f;
+      background-color: #ff6600;
+      border: none;
       padding: 0.5rem 1rem;
       color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #fff;
+      color: #000;
+      border-radius: 10px;
+      padding: 2rem;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .btn {
+      background-color: #ff6600;
+      color: white;
+      padding: 0.7rem 1.5rem;
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      font-weight: bold;
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
   <header>
-    <div class="user-info" id="userInfo">Carregando...</div>
+    <div class="user-info" id="user-name">Usuário</div>
     <button class="logout-btn" onclick="logout()">Sair</button>
   </header>
 
   <div class="container">
-    <div class="card">
-      <h2>Adicionar Novo Dispositivo</h2>
-      <input type="text" id="deviceName" placeholder="Nome do dispositivo" required />
-      <button onclick="adicionarDispositivo()">Adicionar Dispositivo</button>
-      <div class="message" id="message"></div>
+    <h2>Registrar Dispositivo</h2>
+    <div class="form-group">
+      <label for="nomeDispositivo">Nome do Dispositivo</label>
+      <input type="text" id="nomeDispositivo" placeholder="Ex: Sala, Escritório, etc">
     </div>
-
-    <div class="card">
-      <h2>Dispositivos Cadastrados</h2>
-      <ul id="deviceList"></ul>
-    </div>
+    <button class="btn" onclick="adicionarDispositivo()">Adicionar Dispositivo</button>
+    <div id="status"></div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-    import { firebaseConfig } from "./firebase-config.js";
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const message = document.getElementById("message");
+  <script>
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_AUTH_DOMAIN",
+      projectId: "SEU_PROJECT_ID",
+      storageBucket: "SEU_BUCKET",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
 
-    // Verifica se o usuário está autenticado
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser;
+
     auth.onAuthStateChanged(user => {
       if (user) {
-        exibirNomeUsuario(user);
-        listarDispositivos(user);  // Lista dispositivos assim que o usuário se autentica
+        currentUser = user;
+        document.getElementById('user-name').textContent = user.email;
       } else {
-        window.location.href = 'user-login.html';  // Redireciona para o login se não estiver autenticado
+        window.location.href = "user-login.html";
       }
     });
 
-    // Exibe o nome do usuário logado
-    function exibirNomeUsuario(user) {
-      const userInfoElement = document.getElementById("userInfo");
-      userInfoElement.textContent = `Bem-vindo, ${user.displayName || user.email}`;
-    }
-
-    // Função de logout
     function logout() {
-      auth.signOut()
-        .then(() => {
-          window.location.href = 'user-login.html'; // Redireciona para a página de login após logout
-        })
-        .catch((error) => {
-          console.error("Erro ao sair:", error.message);
-          message.textContent = "Erro ao tentar sair. Tente novamente.";
-          message.className = "message error";
-        });
+      auth.signOut().then(() => {
+        window.location.href = "user-login.html";
+      }).catch(error => {
+        alert("Erro ao sair: " + error.message);
+      });
     }
 
-    // Função para adicionar dispositivo
-    async function adicionarDispositivo() {
-      const deviceName = document.getElementById("deviceName").value.trim();
-
-      if (!deviceName) {
-        message.textContent = "Por favor, forneça um nome para o dispositivo.";
-        message.className = "message error";
-        return;
-      }
-
-      const user = auth.currentUser;
-      if (!user) {
-        message.textContent = "Você precisa estar logado para adicionar um dispositivo.";
-        message.className = "message error";
-        return;
-      }
-
-      const deviceId = gerarDeviceId(); // Gera um ID único para o dispositivo
-      try {
-        // Adicionando o novo dispositivo no Firestore
-        await addDoc(collection(db, "devices"), {
-          uid: user.uid, // Associa o dispositivo ao UID do usuário
-          nome: deviceName,
-          deviceId: deviceId,
-          status: "desconectado", // O dispositivo começa desconectado
-        });
-
-        message.textContent = "Dispositivo adicionado com sucesso!";
-        message.className = "message";
-
-        // Atualiza a lista de dispositivos
-        listarDispositivos(user);
-      } catch (error) {
-        message.textContent = "Erro ao adicionar dispositivo: " + error.message;
-        message.className = "message error";
-        console.error("Erro ao adicionar dispositivo:", error);
-      }
-    }
-
-    // Função para gerar ID único do dispositivo
     function gerarDeviceId() {
-      const prefixo = "esp32-c3-";
-      const caracteres = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      let deviceId = prefixo;
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let id = '';
       for (let i = 0; i < 7; i++) {
-        deviceId += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+        id += chars.charAt(Math.floor(Math.random() * chars.length));
       }
-      return deviceId;
+      return 'esp32-c3-' + id;
     }
 
-    // Função para listar dispositivos
-    async function listarDispositivos(user) {
-      const q = query(collection(db, "devices"), where("uid", "==", user.uid));
-      const querySnapshot = await getDocs(q);
+    function adicionarDispositivo() {
+      const nome = document.getElementById('nomeDispositivo').value.trim();
+      const statusDiv = document.getElementById('status');
 
-      const deviceList = document.getElementById("deviceList");
-      deviceList.innerHTML = ""; // Limpa a lista antes de atualizar
+      if (!nome) {
+        statusDiv.textContent = "Digite um nome válido para o dispositivo.";
+        statusDiv.style.color = 'red';
+        return;
+      }
 
-      querySnapshot.forEach((doc) => {
-        const device = doc.data();
-        const listItem = document.createElement("li");
-        listItem.textContent = `${device.nome} - ${device.deviceId} - Status: ${device.status}`;
-        deviceList.appendChild(listItem);
+      const deviceId = gerarDeviceId();
+
+      db.collection("devices").doc(deviceId).set({
+        uid: currentUser.uid,
+        nome: nome,
+        deviceId: deviceId,
+        status: "desconectado"
+      })
+      .then(() => {
+        statusDiv.textContent = `Dispositivo ${deviceId} adicionado com sucesso.`;
+        statusDiv.style.color = 'green';
+        document.getElementById('nomeDispositivo').value = '';
+      })
+      .catch((error) => {
+        console.error("Erro ao adicionar dispositivo:", error);
+        statusDiv.textContent = "Erro ao adicionar dispositivo.";
+        statusDiv.style.color = 'red';
       });
     }
   </script>
