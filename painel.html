@@ -112,15 +112,36 @@
 
     let currentUser = null;
 
-    onAuthStateChanged(auth, async user => {
-      if (!user) {
-        window.location.href = "user-login.html";
-        return;
-      }
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    window.location.href = "user-login.html";
+    return;
+  }
+
+  const autorizadosRef = collection(db, "autorizados");
+  const q = query(autorizadosRef, where("email", "==", user.email));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const doc = querySnapshot.docs[0];
+    const data = doc.data();
+
+    if (data.ativo === true) {
       currentUser = user;
       userNameDiv.textContent = "Usuário: " + (user.displayName || user.email);
       loadDevices(user.uid);
-    });
+    } else {
+      alert("Sua conta ainda não está ativa. Entre em contato com o suporte.");
+      await signOut(auth);
+      window.location.href = "user-login.html";
+    }
+  } else {
+    alert("Usuário não autorizado. Entre em contato com o suporte.");
+    await signOut(auth);
+    window.location.href = "user-login.html";
+  }
+});
+
 
     logoutBtn.addEventListener("click", () => {
       logoutMsg.textContent = "Saindo...";
