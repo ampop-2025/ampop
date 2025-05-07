@@ -110,33 +110,35 @@
 
     let currentUser = null;
 
-    onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "user-login.html";
-      } else {
-        currentUser = user;
-        userEmailSpan.textContent = user.email;
+import { getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-        const q = query(collection(db, "devices"), where("uid", "==", user.uid));
-        onSnapshot(q, snapshot => {
-          deviceList.innerHTML = "";
-          snapshot.forEach(docSnap => {
-            const data = docSnap.data();
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `
-              <input type="text" value="${data.nome}" data-id="${docSnap.id}" />
-              <p><strong>ID:</strong> ${docSnap.id}</p>
-              <div class="card-buttons">
-                <button data-action="editar" data-id="${docSnap.id}">Salvar</button>
-                <button data-action="excluir" data-id="${docSnap.id}" style="background:#dc3545;">Excluir</button>
-              </div>
-            `;
-            deviceList.appendChild(card);
-          });
-        });
-      }
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    window.location.href = "user-login.html";
+  } else {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists() || userSnap.data().ativo === false) {
+      alert("Seu acesso foi desativado pelo administrador.");
+      await signOut(auth);
+      window.location.href = "user-login.html";
+      return;
+    }
+
+    currentUser = user;
+    userEmailSpan.textContent = user.email;
+
+    const q = query(collection(db, "devices"), where("uid", "==", user.uid));
+    onSnapshot(q, snapshot => {
+      deviceList.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        ...
+      });
     });
+  }
+});
+
 
     logoutBtn.addEventListener("click", () => {
       signOut(auth).then(() => {
