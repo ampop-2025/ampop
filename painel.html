@@ -2,204 +2,175 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Painel do Usuário</title>
-  <style>
-    body {
-      background: #f0f4f8;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background: #007BFF;
-      color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    main {
-      padding: 2rem;
-      max-width: 800px;
-      margin: auto;
-    }
-    h2 {
-      color: #007BFF;
-      margin-bottom: 1rem;
-    }
-    .device-card {
-      background: white;
-      border-radius: 10px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .device-card strong {
-      display: block;
-      margin-bottom: 0.3rem;
-    }
-    form {
-      background: white;
-      padding: 1rem;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 2rem;
-    }
-    input, button {
-      padding: 0.6rem;
-      margin-top: 0.5rem;
-      margin-bottom: 1rem;
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      background: #007BFF;
-      color: white;
-      font-weight: bold;
-      border: none;
-      cursor: pointer;
-    }
-    #logout-msg {
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      font-weight: bold;
-    }
-    #logout-msg.show {
-      opacity: 1;
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <div id="user-name">Carregando...</div>
-    <div>
-      <button id="logout-btn">Sair</button>
-      <span id="logout-msg"></span>
-    </div>
-  </header>
-
-  <main>
-    <h2>Seus Dispositivos</h2>
-
-    <form id="add-device-form">
-      <label for="device-name">Nome do Dispositivo:</label>
-      <input type="text" id="device-name" placeholder="Ex: Cozinha, Sala, etc." required />
-      <button type="submit">Adicionar Dispositivo</button>
-    </form>
-
-    <div id="device-list">
-      <!-- Dispositivos aparecerão aqui -->
-    </div>
-  </main>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ampConnect - Meus Dispositivos</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, query, where, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-    import { firebaseConfig } from "./firebase-config.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      where,
+      getDocs,
+      addDoc,
+      updateDoc,
+      deleteDoc,
+      doc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "SUA_API_KEY",
+      authDomain: "SEU_DOMINIO.firebaseapp.com",
+      projectId: "SEU_PROJETO_ID",
+      storageBucket: "SEU_BUCKET",
+      messagingSenderId: "SEU_SENDER_ID",
+      appId: "SEU_APP_ID"
+    };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const userNameDiv = document.getElementById("user-name");
-    const logoutBtn = document.getElementById("logout-btn");
-    const logoutMsg = document.getElementById("logout-msg");
     const deviceList = document.getElementById("device-list");
-    const addDeviceForm = document.getElementById("add-device-form");
+    const logoutBtn = document.getElementById("logout-btn");
+    const form = document.getElementById("add-form");
 
-    let currentUser = null;
-
-onAuthStateChanged(auth, async user => {
-  if (!user) {
-    window.location.href = "user-login.html";
-    return;
-  }
-
-  const autorizadosRef = collection(db, "autorizados");
-  const q = query(autorizadosRef, where("email", "==", user.email));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-
-    if (data.ativo === true) {
-      currentUser = user;
-      userNameDiv.textContent = "Usuário: " + (user.displayName || user.email);
-      loadDevices(user.uid);
-    } else {
-      alert("Sua conta ainda não está ativa. Entre em contato com o suporte.");
-      await signOut(auth);
-      window.location.href = "user-login.html";
-    }
-  } else {
-    alert("Usuário não autorizado. Entre em contato com o suporte.");
-    await signOut(auth);
-    window.location.href = "user-login.html";
-  }
-});
-
-
-    logoutBtn.addEventListener("click", () => {
-      logoutMsg.textContent = "Saindo...";
-      logoutMsg.classList.add("show");
-      signOut(auth).then(() => {
-        setTimeout(() => {
-          window.location.href = "user-login.html";
-        }, 1000);
-      });
-    });
-
-    function generateDeviceId() {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-      let id = '';
-      for (let i = 0; i < 7; i++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "user-login.html";
+        return;
       }
-      return `esp32-c3-${id}`;
-    }
 
-    addDeviceForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const deviceName = document.getElementById("device-name").value.trim();
-      if (!deviceName || !currentUser) return;
+      const q = query(collection(db, "devices"), where("ownerId", "==", user.uid));
+      const snapshot = await getDocs(q);
 
-      const deviceId = generateDeviceId();
-
-      try {
-        await addDoc(collection(db, "devices"), {
-          uid: currentUser.uid,
-          nome: deviceName,
-          deviceId: deviceId,
-          status: "desconectado",
-          createdAt: serverTimestamp()
-        });
-        addDeviceForm.reset();
-        loadDevices(currentUser.uid);
-      } catch (error) {
-        alert("Erro ao adicionar dispositivo: " + error.message);
-      }
-    });
-
-    async function loadDevices(uid) {
-      deviceList.innerHTML = "";
-      const q = query(collection(db, "devices"), where("uid", "==", uid));
-      const querySnapshot = await getDocs(q);
-      querySnapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.className = "device-card";
-        div.innerHTML = `
-          <strong>${data.nome}</strong>
-          ID: ${data.deviceId}<br>
-          Status: ${data.status}
+      snapshot.forEach((docItem) => {
+        const data = docItem.data();
+        const card = document.createElement("div");
+        card.className = "device-card";
+        card.innerHTML = `
+          <h3>${data.nome}</h3>
+          <p>Status: <strong>${data.status}</strong></p>
+          <button onclick="toggleStatus('${docItem.id}', '${data.status}')">Alternar Status</button>
+          <button onclick="editDevice('${docItem.id}', '${data.nome}')">Editar</button>
+          <button onclick="deleteDevice('${docItem.id}')">Excluir</button>
         `;
-        deviceList.appendChild(div);
+        deviceList.appendChild(card);
       });
-    }
+
+      window.toggleStatus = async (id, currentStatus) => {
+        const newStatus = currentStatus === "ligado" ? "desligado" : "ligado";
+        await updateDoc(doc(db, "devices", id), {
+          status: newStatus,
+          updatedAt: serverTimestamp()
+        });
+        location.reload();
+      };
+
+      window.editDevice = async (id, currentName) => {
+        const novoNome = prompt("Novo nome do dispositivo:", currentName);
+        if (novoNome) {
+          await updateDoc(doc(db, "devices", id), {
+            nome: novoNome,
+            updatedAt: serverTimestamp()
+          });
+          location.reload();
+        }
+      };
+
+      window.deleteDevice = async (id) => {
+        if (confirm("Deseja realmente excluir este dispositivo?")) {
+          await deleteDoc(doc(db, "devices", id));
+          location.reload();
+        }
+      };
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById("nome").value;
+        if (nome.trim() !== "") {
+          await addDoc(collection(db, "devices"), {
+            nome,
+            status: "desligado",
+            ownerId: user.uid,
+            updatedAt: serverTimestamp()
+          });
+          location.reload();
+        }
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        signOut(auth).then(() => window.location.href = "user-login.html");
+      });
+    });
   </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #101922;
+      color: white;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      color: #f97316;
+    }
+    #logout-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: #f97316;
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .device-card {
+      background: #1f2937;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 10px;
+    }
+    .device-card h3 {
+      margin: 0;
+    }
+    .device-card button {
+      margin: 0.3rem;
+      background: #f97316;
+      color: white;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #add-form {
+      margin: 2rem 0;
+      display: flex;
+      gap: 0.5rem;
+    }
+    #add-form input {
+      padding: 0.5rem;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1>ampConnect - Meus Dispositivos</h1>
+  <button id="logout-btn">Sair</button>
+
+  <form id="add-form">
+    <input type="text" id="nome" placeholder="Nome do novo dispositivo" required />
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <div id="device-list"></div>
 </body>
 </html>
