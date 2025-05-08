@@ -2,102 +2,104 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel do Usuário - ampConnect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ampConnect - Painel do Usuário</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
       font-family: Arial, sans-serif;
       background: linear-gradient(to bottom, #101820, #1d2c3d);
       color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      justify-content: flex-start;
+      height: 100vh;
+      padding-top: 40px;
     }
-    .card {
+    .container {
       background: #ffffff10;
-      backdrop-filter: blur(10px);
       padding: 2rem;
       border-radius: 15px;
+      backdrop-filter: blur(10px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-      text-align: center;
-      max-width: 500px;
       width: 100%;
-    }
-    img.logo {
-      width: 150px;
-      margin-bottom: 1rem;
+      max-width: 500px;
+      text-align: center;
     }
     h2 {
       color: #FFA500;
-      margin-bottom: 0.5rem;
     }
-    .status {
+    #status {
       margin-top: 1rem;
       font-size: 1rem;
-      padding: 0.5rem;
+    }
+    #logout {
+      margin-top: 2rem;
+      padding: 0.75rem;
+      background: #FFA500;
+      border: none;
       border-radius: 8px;
+      color: #000;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
     }
-    .ativo {
-      background-color: #00800050;
-      color: #00ff90;
-    }
-    .inativo {
-      background-color: #ff000050;
-      color: #ff5050;
+    img {
+      width: 120px;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <img src="logo.png" alt="Logo" class="logo">
+  <div class="container">
+    <img src="logo.png" alt="Logo ampConnect" />
     <h2>Bem-vindo ao ampConnect</h2>
-    <p id="user-email">Carregando...</p>
-    <div id="status" class="status">Verificando status...</div>
+    <p id="userEmail"></p>
+    <div id="status">Verificando status...</div>
+    <button id="logout">Sair</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
     import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const userEmailEl = document.getElementById("user-email");
-    const statusEl = document.getElementById("status");
+    const userEmail = document.getElementById("userEmail");
+    const statusDiv = document.getElementById("status");
+    const logoutBtn = document.getElementById("logout");
+
+    logoutBtn.addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "user-login.html";
+    });
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         const email = user.email;
-        userEmailEl.textContent = `Usuário logado: ${email}`;
-
-        const userDocRef = doc(db, "autorizados", email);
+        userEmail.textContent = "Usuário logado: " + email;
 
         try {
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.ativo === true) {
-              statusEl.textContent = "Status: Ativado pelo administrador";
-              statusEl.classList.add("ativo");
-            } else {
-              statusEl.textContent = "Status: Desativado - Entre em contato com o suporte.";
-              statusEl.classList.add("inativo");
-            }
+          const q = query(collection(db, "autorizados"), where("email", "==", email));
+          const querySnapshot = await getDocs(q);
+
+          if (querySnapshot.empty) {
+            statusDiv.innerHTML = `<p style="color: red;">Dados não encontrados. Entre em contato com o suporte.</p>`;
           } else {
-            statusEl.textContent = "Dados não encontrados. Entre em contato com o suporte.";
-            statusEl.classList.add("inativo");
+            const userData = querySnapshot.docs[0].data();
+            if (userData.ativo) {
+              statusDiv.innerHTML = `<p style="color: green;">Status: Ativado pelo administrador</p>`;
+            } else {
+              statusDiv.innerHTML = `<p style="color: red;">Status: Desativado pelo administrador. Entre em contato com o suporte.</p>`;
+            }
           }
         } catch (error) {
-          console.error("Erro ao acessar dados do usuário:", error);
-          statusEl.textContent = "Erro ao carregar status. Entre em contato com o suporte.";
-          statusEl.classList.add("inativo");
+          statusDiv.innerHTML = `<p style="color: red;">Erro ao verificar status: ${error.message}</p>`;
         }
       } else {
         window.location.href = "user-login.html";
