@@ -3,174 +3,106 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ampConnect - Meus Dispositivos</title>
+  <title>Painel do Usuário - ampConnect</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #101820, #1d2c3d);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .card {
+      background: #ffffff10;
+      backdrop-filter: blur(10px);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+    img.logo {
+      width: 150px;
+      margin-bottom: 1rem;
+    }
+    h2 {
+      color: #FFA500;
+      margin-bottom: 0.5rem;
+    }
+    .status {
+      margin-top: 1rem;
+      font-size: 1rem;
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+    .ativo {
+      background-color: #00800050;
+      color: #00ff90;
+    }
+    .inativo {
+      background-color: #ff000050;
+      color: #ff5050;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="logo.png" alt="Logo" class="logo">
+    <h2>Bem-vindo ao ampConnect</h2>
+    <p id="user-email">Carregando...</p>
+    <div id="status" class="status">Verificando status...</div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      where,
-      getDocs,
-      addDoc,
-      updateDoc,
-      deleteDoc,
-      doc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "SUA_API_KEY",
-      authDomain: "SEU_DOMINIO.firebaseapp.com",
-      projectId: "SEU_PROJETO_ID",
-      storageBucket: "SEU_BUCKET",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId: "SEU_APP_ID"
-    };
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+    import { firebaseConfig } from "./firebase-config.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const deviceList = document.getElementById("device-list");
-    const logoutBtn = document.getElementById("logout-btn");
-    const form = document.getElementById("add-form");
+    const userEmailEl = document.getElementById("user-email");
+    const statusEl = document.getElementById("status");
 
     onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+      if (user) {
+        const email = user.email;
+        userEmailEl.textContent = `Usuário logado: ${email}`;
+
+        const userDocRef = doc(db, "autorizados", email);
+
+        try {
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.ativo === true) {
+              statusEl.textContent = "Status: Ativado pelo administrador";
+              statusEl.classList.add("ativo");
+            } else {
+              statusEl.textContent = "Status: Desativado - Entre em contato com o suporte.";
+              statusEl.classList.add("inativo");
+            }
+          } else {
+            statusEl.textContent = "Dados não encontrados. Entre em contato com o suporte.";
+            statusEl.classList.add("inativo");
+          }
+        } catch (error) {
+          console.error("Erro ao acessar dados do usuário:", error);
+          statusEl.textContent = "Erro ao carregar status. Entre em contato com o suporte.";
+          statusEl.classList.add("inativo");
+        }
+      } else {
         window.location.href = "user-login.html";
-        return;
       }
-
-      const q = query(collection(db, "devices"), where("ownerId", "==", user.uid));
-      const snapshot = await getDocs(q);
-
-      snapshot.forEach((docItem) => {
-        const data = docItem.data();
-        const card = document.createElement("div");
-        card.className = "device-card";
-        card.innerHTML = `
-          <h3>${data.nome}</h3>
-          <p>Status: <strong>${data.status}</strong></p>
-          <button onclick="toggleStatus('${docItem.id}', '${data.status}')">Alternar Status</button>
-          <button onclick="editDevice('${docItem.id}', '${data.nome}')">Editar</button>
-          <button onclick="deleteDevice('${docItem.id}')">Excluir</button>
-        `;
-        deviceList.appendChild(card);
-      });
-
-      window.toggleStatus = async (id, currentStatus) => {
-        const newStatus = currentStatus === "ligado" ? "desligado" : "ligado";
-        await updateDoc(doc(db, "devices", id), {
-          status: newStatus,
-          updatedAt: serverTimestamp()
-        });
-        location.reload();
-      };
-
-      window.editDevice = async (id, currentName) => {
-        const novoNome = prompt("Novo nome do dispositivo:", currentName);
-        if (novoNome) {
-          await updateDoc(doc(db, "devices", id), {
-            nome: novoNome,
-            updatedAt: serverTimestamp()
-          });
-          location.reload();
-        }
-      };
-
-      window.deleteDevice = async (id) => {
-        if (confirm("Deseja realmente excluir este dispositivo?")) {
-          await deleteDoc(doc(db, "devices", id));
-          location.reload();
-        }
-      };
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const nome = document.getElementById("nome").value;
-        if (nome.trim() !== "") {
-          await addDoc(collection(db, "devices"), {
-            nome,
-            status: "desligado",
-            ownerId: user.uid,
-            updatedAt: serverTimestamp()
-          });
-          location.reload();
-        }
-      });
-
-      logoutBtn.addEventListener("click", () => {
-        signOut(auth).then(() => window.location.href = "user-login.html");
-      });
     });
   </script>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #101922;
-      color: white;
-      margin: 0;
-      padding: 2rem;
-    }
-    h1 {
-      text-align: center;
-      color: #f97316;
-    }
-    #logout-btn {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #f97316;
-      border: none;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .device-card {
-      background: #1f2937;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-radius: 10px;
-    }
-    .device-card h3 {
-      margin: 0;
-    }
-    .device-card button {
-      margin: 0.3rem;
-      background: #f97316;
-      color: white;
-      border: none;
-      padding: 0.4rem 0.8rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #add-form {
-      margin: 2rem 0;
-      display: flex;
-      gap: 0.5rem;
-    }
-    #add-form input {
-      padding: 0.5rem;
-      flex: 1;
-    }
-  </style>
-</head>
-<body>
-  <h1>ampConnect - Meus Dispositivos</h1>
-  <button id="logout-btn">Sair</button>
-
-  <form id="add-form">
-    <input type="text" id="nome" placeholder="Nome do novo dispositivo" required />
-    <button type="submit">Adicionar</button>
-  </form>
-
-  <div id="device-list"></div>
 </body>
 </html>
