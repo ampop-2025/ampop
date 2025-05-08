@@ -15,23 +15,20 @@
       margin: 0;
       color: white;
     }
-
     .card {
       background: #ffffff10;
       padding: 2rem;
       border-radius: 15px;
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(10px);
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
       width: 100%;
       max-width: 400px;
       text-align: center;
     }
-
     h2 {
       margin-bottom: 1rem;
       color: #FFA500;
     }
-
     input {
       width: 100%;
       padding: 0.75rem;
@@ -40,7 +37,6 @@
       border-radius: 8px;
       font-size: 1rem;
     }
-
     button {
       width: 100%;
       padding: 0.75rem;
@@ -53,12 +49,10 @@
       cursor: pointer;
       margin-top: 1rem;
     }
-
     .message {
       margin-top: 1rem;
       font-size: 0.9rem;
     }
-
     .error {
       color: #FF4F4F;
     }
@@ -67,10 +61,9 @@
 <body>
   <div class="card">
     <h2>Login</h2>
-
     <input type="email" id="email" placeholder="E-mail" required />
     <input type="password" id="password" placeholder="Senha" required />
-    <button onclick="login()">Entrar</button>
+    <button id="loginBtn">Entrar</button>
     <div class="message" id="message"></div>
   </div>
 
@@ -82,35 +75,30 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const message = document.getElementById("message");
+    const loginBtn = document.getElementById("loginBtn");
 
-    async function login() {
+    loginBtn.addEventListener("click", async () => {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
 
       if (!email || !password) {
-        showMessage("Preencha todos os campos.", true);
+        message.textContent = "Preencha todos os campos.";
+        message.className = "message error";
         return;
       }
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
-        showMessage("Login bem-sucedido! Redirecionando...", false);
-
+        message.textContent = "Login bem-sucedido! Redirecionando...";
+        message.className = "message";
         setTimeout(() => {
           window.location.href = "painel.html";
-        }, 1000);
+        }, 1500);
       } catch (error) {
-        showMessage("Erro ao fazer login: Verifique e-mail e senha.", true);
-        console.error(error);
+        message.textContent = "Erro ao fazer login: " + error.message;
+        message.className = "message error";
       }
-    }
-
-    function showMessage(text, isError) {
-      message.textContent = text;
-      message.className = "message" + (isError ? " error" : "");
-    }
-
-    window.login = login;
+    });
   </script>
 </body>
 </html>
