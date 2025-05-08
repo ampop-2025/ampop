@@ -63,8 +63,13 @@
           createdAt: serverTimestamp()
         });
 
-        alert("Cadastro realizado com sucesso!");
-        window.location.href = "user-login.html";
+// Exibe mensagem personalizada e redireciona após 2 segundos
+const mensagem = `Bem-vindo, ${nomeUsuario}! Redirecionando para o painel...`;
+alert(mensagem);
+setTimeout(() => {
+  window.location.href = "painel.html";
+}, 2000);
+
       } catch (error) {
         alert("Erro ao registrar: " + error.message);
       }
